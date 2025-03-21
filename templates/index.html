@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesla Stock Trading Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .dashboard-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            background-color: white;
+        }
+        .card-header {
+            background-color: #343a40;
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        .metric-card {
+            height: 100%;
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .positive-return {
+            color: #28a745;
+        }
+        .negative-return {
+            color: #dc3545;
+        }
+        .chart-container {
+            width: 100%;
+            height: 400px;
+        }
+        .header-icon {
+            margin-right: 10px;
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        .nav-tabs .nav-link.active {
+            font-weight: 600;
+        }
+        .project-highlight {
+            background-color: #f0f8ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="display-5 fw-bold">
+                    <i class="bi bi-graph-up-arrow text-success header-icon"></i>
+                    Tesla Stock Trading Dashboard
+                </h1>
+                
+                <form action="/run-simulation" method="post">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-play-fill"></i> Run Simulation
+                    </button>
+                </form>
+            </div>
+            <p class="lead text-muted">Visualize your ML-based Tesla stock trading strategy performance</p>
+        </header>
+
+        {% if not has_results %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            No simulation results found. Click "Run Simulation" to generate results.
+        </div>
+        {% else %}
+        
+        <!-- Project Simulation Section -->
+        <div class="project-highlight mb-4">
+            <div class="d-flex justify-content-between align-items-start">
+                <h3><i class="bi bi-calendar-check text-primary"></i> March 2025 Project Simulation</h3>
+                
+                {% if has_project_sim %}
+                <a href="/project-details" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-clipboard-data"></i> View Details
+                </a>
+                {% endif %}
+            </div>
+            
+            {% if has_project_sim %}
+            <div class="row mt-3">
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Final Portfolio</div>
+                            <div class="metric-value">${{ project_performance['Final Portfolio Value ($)'] }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Total Return</div>
+                            <div class="metric-value {% if project_performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {{ project_performance['Total Return (%)'] }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Buy & Hold Return</div>
+                            <div class="metric-value {% if project_performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {{ project_performance['Buy & Hold Return (%)'] }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Trading Days</div>
+                            <div class="metric-value">{{ project_performance['Number of Trading Days'] }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-2">
+                <a href="/project-details" class="btn btn-primary">
+                    <i class="bi bi-search"></i> View Detailed Trading History
+                </a>
+                <form action="/run-project-simulation" method="post" class="d-inline ms-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-arrow-repeat"></i> Re-Run Project Simulation
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <p>Run the March 2025 project simulation to see how your trading strategy performs during the specific project period (March 24-28, 2025).</p>
+            <p><strong>Features:</strong></p>
+            <ul>
+                <li>Simulate trading specifically for the project timeframe</li>
+                <li>Follow exact project requirements: 9:00 AM order submission, 10:00 AM execution</li>
+                <li>Apply 1% transaction fee as specified in the project</li>
+                <li>Generate detailed order history with proper order format</li>
+            </ul>
+            <form action="/run-project-simulation" method="post" class="mt-3 text-center">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-play-fill"></i> Run Project Simulation
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Performance Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Initial Investment</div>
+                    <div class="metric-value">${{ performance['Initial Portfolio Value ($)'] }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Final Portfolio Value</div>
+                    <div class="metric-value">${{ performance['Final Portfolio Value ($)'] }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Total Return</div>
+                    <div class="metric-value {% if performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                        {{ performance['Total Return (%)'] }}%
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Annualized Return</div>
+                    <div class="metric-value {% if performance['Annualized Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                        {{ performance['Annualized Return (%)'] }}%
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Sharpe Ratio</div>
+                    <div class="metric-value">{{ performance['Sharpe Ratio'] }}</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Max Drawdown</div>
+                    <div class="metric-value negative-return">{{ performance['Max Drawdown (%)'] }}%</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Buy & Hold Return</div>
+                    <div class="metric-value {% if performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                        {{ performance['Buy & Hold Return (%)'] }}%
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="dashboard-card metric-card p-3">
+                    <div class="text-muted small">Trading Period</div>
+                    <div class="metric-value">{{ num_days }} days</div>
+                    <div class="small text-muted mt-1">{{ history_start }} to {{ history_end }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="dashboard-card mb-4">
+            <div class="card-header">
+                <i class="bi bi-graph-up header-icon"></i>
+                Performance Charts
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="portfolio-tab" data-bs-toggle="tab" data-bs-target="#portfolio" type="button" role="tab" aria-controls="portfolio" aria-selected="true">Portfolio Performance</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="signals-tab" data-bs-toggle="tab" data-bs-target="#signals" type="button" role="tab" aria-controls="signals" aria-selected="false">Trading Signals</button>
+                    </li>
+                </ul>
+                <div class="tab-content mt-3" id="myTabContent">
+                    <div class="tab-pane fade show active" id="portfolio" role="tabpanel" aria-labelledby="portfolio-tab">
+                        <div class="chart-container">
+                            <img src="data:image/png;base64,{{ portfolio_chart }}" alt="Portfolio Performance Chart" class="img-fluid" />
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="signals" role="tabpanel" aria-labelledby="signals-tab">
+                        <div class="chart-container">
+                            <img src="data:image/png;base64,{{ signals_chart }}" alt="Trading Signals Chart" class="img-fluid" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trading Activity -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <i class="bi bi-table header-icon"></i>
+                Trading Activity
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                            <div>
+                                <h5>Buy Trades</h5>
+                                <div class="h3 text-success">{{ buy_count }}</div>
+                            </div>
+                            <i class="bi bi-arrow-up-circle text-success" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                            <div>
+                                <h5>Sell Trades</h5>
+                                <div class="h3 text-danger">{{ sell_count }}</div>
+                            </div>
+                            <i class="bi bi-arrow-down-circle text-danger" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="/details" class="btn btn-outline-primary">
+                        <i class="bi bi-table"></i> View Detailed Trading History
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Footer -->
+        <footer class="mt-5 pt-3 pb-3 text-center text-muted border-top">
+            <p>Machine Learning & Data Mining - Tesla Stock Trading Project</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 
