@@ -49,6 +49,7 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df_features['Bollinger_Upper'] = df_features['MA20'] + (df_features['MA20_std'] * 2)
     df_features['Bollinger_Lower'] = df_features['MA20'] - (df_features['MA20_std'] * 2)
     df_features['Bollinger_Width'] = (df_features['Bollinger_Upper'] - df_features['Bollinger_Lower']) / df_features['MA20']
+    df_features['Bollinger_pct_b'] = (df_features['Close'] - df_features['Bollinger_Lower']) / (df_features['Bollinger_Upper'] - df_features['Bollinger_Lower'])
     
     # Price momentum
     df_features['Price_Momentum'] = df['Close'] / df['Close'].shift(1) - 1
@@ -77,6 +78,121 @@ def add_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df_features['Volatility_5'] = df_features['Log_Return'].rolling(window=5).std()
     df_features['Volatility_10'] = df_features['Log_Return'].rolling(window=10).std()
     df_features['Volatility_20'] = df_features['Log_Return'].rolling(window=20).std()
+    
+    # Advanced Oscillators
+    # Stochastic Oscillator
+    df_features['Stoch_K'] = 100 * ((df_features['Close'] - df_features['Low'].rolling(window=14).min()) / 
+                                    (df_features['High'].rolling(window=14).max() - df_features['Low'].rolling(window=14).min()))
+    df_features['Stoch_D'] = df_features['Stoch_K'].rolling(window=3).mean()
+    
+    # Triple Exponential Average (TEMA)
+    ema1 = df['Close'].ewm(span=9, adjust=False).mean()
+    ema2 = ema1.ewm(span=9, adjust=False).mean()
+    ema3 = ema2.ewm(span=9, adjust=False).mean()
+    df_features['TEMA'] = 3 * ema1 - 3 * ema2 + ema3
+    
+    # Average True Range (ATR)
+    true_range = pd.DataFrame()
+    true_range['tr1'] = abs(df['High'] - df['Low'])
+    true_range['tr2'] = abs(df['High'] - df['Close'].shift(1))
+    true_range['tr3'] = abs(df['Low'] - df['Close'].shift(1))
+    true_range['TR'] = true_range[['tr1', 'tr2', 'tr3']].max(axis=1)
+    df_features['ATR'] = true_range['TR'].rolling(window=14).mean()
+    
+    # On-Balance Volume (OBV)
+    obv = 0
+    obv_list = []
+    df_reset = df.reset_index(drop=True)  # Reset index to avoid timestamp issues
+    
+    for i in range(len(df_reset)):
+        if i > 0:
+            if df_reset['Close'].iloc[i] > df_reset['Close'].iloc[i-1]:
+                obv += df_reset['Volume'].iloc[i]
+            elif df_reset['Close'].iloc[i] < df_reset['Close'].iloc[i-1]:
+                obv -= df_reset['Volume'].iloc[i]
+        obv_list.append(obv)
+    
+    df_features['OBV'] = obv_list
+    df_features['OBV_ROC'] = df_features['OBV'].pct_change(periods=10) * 100
+    
+    # Add profit-maximizing features
+    
+    # Price Acceleration - capture rapid price movements
+    df_features['Price_Acceleration'] = df_features['Close'].diff().diff()
+    
+    # Mean Reversion Indicators
+    df_features['Deviation_From_MA50'] = (df_features['Close'] - df_features['MA50']) / df_features['MA50']
+    df_features['Deviation_From_MA200'] = (df_features['Close'] - df_features['MA200']) / df_features['MA200']
+    
+    # Volume Breakout Signals - capture major moves
+    df_features['Volume_MA20'] = df_features['Volume'].rolling(window=20).mean()
+    df_features['Volume_Breakout'] = df_features['Volume'] / df_features['Volume_MA20']
+    
+    # RSI Extremes - better identify overbought/oversold conditions
+    df_features['RSI_Extreme'] = 0
+    df_features.loc[df_features['RSI'] > 80, 'RSI_Extreme'] = 1  # Strong overbought
+    df_features.loc[df_features['RSI'] < 20, 'RSI_Extreme'] = -1  # Strong oversold
+    
+    # Profitability trend indicators
+    df_features['Close_Shifted'] = df_features['Close'].shift(1)
+    df_features['Daily_Return'] = (df_features['Close'] / df_features['Close_Shifted'] - 1) * 100
+    df_features['Return_MA5'] = df_features['Daily_Return'].rolling(window=5).mean()
+    df_features['Return_MA10'] = df_features['Daily_Return'].rolling(window=10).mean()
+    df_features['Momentum_Signal'] = (df_features['Return_MA5'] > df_features['Return_MA10']).astype(int)
+    
+    # Gap detection - often indicates significant moves
+    df_features['Gap_Up'] = (df_features['Open'] > df_features['Close_Shifted']).astype(int)
+    df_features['Gap_Down'] = (df_features['Open'] < df_features['Close_Shifted']).astype(int)
+    df_features['Gap_Size'] = (df_features['Open'] - df_features['Close_Shifted']) / df_features['Close_Shifted'] * 100
+    
+    # Volatility-based position sizing signals
+    df_features['Volatility_20d'] = df_features['Daily_Return'].rolling(window=20).std()
+    df_features['Volatility_Signal'] = 0
+    df_features.loc[df_features['Volatility_20d'] < df_features['Volatility_20d'].rolling(window=60).mean(), 'Volatility_Signal'] = 1
+    df_features.loc[df_features['Volatility_20d'] > df_features['Volatility_20d'].rolling(window=60).mean() * 1.5, 'Volatility_Signal'] = -1
+    
+    # Chaikin Money Flow (CMF)
+    mf_multiplier = ((df_features['Close'] - df_features['Low']) - (df_features['High'] - df_features['Close'])) / (df_features['High'] - df_features['Low']).replace(0, np.nan)
+    mf_volume = mf_multiplier * df_features['Volume']
+    df_features['CMF'] = mf_volume.rolling(window=20).sum() / df_features['Volume'].rolling(window=20).sum()
+    
+    # Vortex Indicator
+    df_features['TR'] = true_range['TR']
+    pdm = (df['High'] - df['High'].shift(1)).clip(lower=0)
+    ndm = (df['Low'].shift(1) - df['Low']).clip(lower=0)
+    df_features['PDI14'] = pdm.rolling(window=14).sum() / df_features['TR'].rolling(window=14).sum() * 100
+    df_features['NDI14'] = ndm.rolling(window=14).sum() / df_features['TR'].rolling(window=14).sum() * 100
+    
+    # Calendar Effects
+    # Extract date components
+    if isinstance(df.index, pd.DatetimeIndex):
+        date_index = df.index
+    else:
+        date_index = pd.to_datetime(df.index)
+    
+    df_features['Day_of_Week'] = date_index.dayofweek
+    df_features['Day_of_Month'] = date_index.day
+    df_features['Month'] = date_index.month
+    df_features['Quarter'] = date_index.quarter
+    df_features['Is_Month_End'] = date_index.is_month_end.astype(int)
+    df_features['Is_Month_Start'] = date_index.is_month_start.astype(int)
+    
+    # Historical volatility context
+    # 10-day historical volatility
+    df_features['HV10'] = df_features['Log_Return'].rolling(window=10).std() * np.sqrt(252) * 100
+    # 30-day historical volatility
+    df_features['HV30'] = df_features['Log_Return'].rolling(window=30).std() * np.sqrt(252) * 100
+    
+    # Price Range Features
+    df_features['Daily_Range'] = (df['High'] - df['Low']) / df['Open'] * 100  # Daily range as percentage
+    df_features['Range_MA5'] = df_features['Daily_Range'].rolling(window=5).mean()
+    
+    # Market Regime Features
+    df_features['Bull_Bear'] = (df_features['Close'] > df_features['MA200']).astype(int)  # 1 if bullish (above 200MA), 0 if bearish
+    df_features['Price_Trend'] = ((df_features['MA5'] - df_features['MA20']) / df_features['MA20'] * 100)  # Short-term trend indicator
+    
+    # Trend Persistence
+    df_features['Trend_Persistence'] = ((df_features['Close'] - df_features['MA50']) / df_features['MA50'] * 100)
     
     # Drop NaN values
     df_features.dropna(inplace=True)

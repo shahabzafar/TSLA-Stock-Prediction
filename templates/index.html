@@ -106,7 +106,13 @@
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <div class="metric-label">Final Portfolio</div>
-                            <div class="metric-value">${{ project_performance['Final Portfolio Value ($)'] }}</div>
+                            <div class="metric-value">
+                                {% if project_performance and 'Final Portfolio Value ($)' in project_performance %}
+                                    ${{ project_performance['Final Portfolio Value ($)'] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -114,8 +120,14 @@
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <div class="metric-label">Total Return</div>
-                            <div class="metric-value {% if project_performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {{ project_performance['Total Return (%)'] }}%
+                            <div class="metric-value {% if project_performance and 'Total Return (%)' in project_performance and project_performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if project_performance and 'Total Return (%)' in project_performance %}
+                                    {{ project_performance['Total Return (%)'] }}%
+                                {% elif project_performance and 'Total Return' in project_performance %}
+                                    {{ project_performance['Total Return'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -124,8 +136,14 @@
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <div class="metric-label">Buy & Hold Return</div>
-                            <div class="metric-value {% if project_performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {{ project_performance['Buy & Hold Return (%)'] }}%
+                            <div class="metric-value {% if project_performance and 'Buy & Hold Return (%)' in project_performance and project_performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if project_performance and 'Buy & Hold Return (%)' in project_performance %}
+                                    {{ project_performance['Buy & Hold Return (%)'] }}%
+                                {% elif project_performance and 'Buy & Hold Return' in project_performance %}
+                                    {{ project_performance['Buy & Hold Return'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -134,7 +152,13 @@
                     <div class="card h-100">
                         <div class="card-body text-center">
                             <div class="metric-label">Trading Days</div>
-                            <div class="metric-value">{{ project_performance['Number of Trading Days'] }}</div>
+                            <div class="metric-value">
+                                {% if project_performance and 'Number of Trading Days' in project_performance %}
+                                    {{ project_performance['Number of Trading Days'] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -162,6 +186,302 @@
             <form action="/run-project-simulation" method="post" class="mt-3 text-center">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-play-fill"></i> Run Project Simulation
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- March 2023 Full Month Simulation Section -->
+        <div class="project-highlight mb-4" style="background-color: #fff8e1; border-left: 4px solid #ff9800;">
+            <div class="d-flex justify-content-between align-items-start">
+                <h3><i class="bi bi-calendar3 text-warning"></i> March 2023 Full Month Simulation</h3>
+                
+                {% if os.path.exists('results/tesla_march_2023_simulation.csv') %}
+                <a href="/march-2023-details" class="btn btn-outline-warning btn-sm">
+                    <i class="bi bi-clipboard-data"></i> View Details
+                </a>
+                {% endif %}
+            </div>
+            
+            {% if os.path.exists('results/tesla_march_2023_simulation.csv') and os.path.exists('results/tesla_march_2023_performance.csv') %}
+            {% set march_2023_performance = pd.read_csv('results/tesla_march_2023_performance.csv') %}
+            {% set march_2023_perf_dict = dict(zip(march_2023_performance['Metric'], march_2023_performance['Value'])) %}
+            
+            <div class="row mt-3">
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Final Portfolio</div>
+                            <div class="metric-value">${{ march_2023_perf_dict['Final Portfolio Value ($)'] }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Total Return</div>
+                            <div class="metric-value {% if march_2023_perf_dict and 'Total Return (%)' in march_2023_perf_dict and march_2023_perf_dict['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if march_2023_perf_dict and 'Total Return (%)' in march_2023_perf_dict %}
+                                    {{ march_2023_perf_dict['Total Return (%)'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Buy & Hold Return</div>
+                            <div class="metric-value {% if march_2023_perf_dict and 'Buy & Hold Return (%)' in march_2023_perf_dict and march_2023_perf_dict['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if march_2023_perf_dict and 'Buy & Hold Return (%)' in march_2023_perf_dict %}
+                                    {{ march_2023_perf_dict['Buy & Hold Return (%)'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Trading Days</div>
+                            <div class="metric-value">
+                                {% if march_2023_perf_dict and 'Number of Trading Days' in march_2023_perf_dict %}
+                                    {{ march_2023_perf_dict['Number of Trading Days'] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-2">
+                <a href="/march-2023-details" class="btn btn-warning">
+                    <i class="bi bi-search"></i> View Detailed Trading History
+                </a>
+                <form action="/run-march-2023-simulation" method="post" class="d-inline ms-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-arrow-repeat"></i> Re-Run March 2023 Simulation
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <p>Run the March 2023 full month simulation to see how your trading strategy performs over a longer time period with real historical data.</p>
+            <p><strong>Features:</strong></p>
+            <ul>
+                <li>Simulate trading for the entire month of March 2023 (all trading days)</li>
+                <li>Test your strategy's performance over a full trading month</li>
+                <li>Uses the same 9:00 AM submission and 10:00 AM execution times</li>
+                <li>Apply 1% transaction fee for realistic trading conditions</li>
+            </ul>
+            <form action="/run-march-2023-simulation" method="post" class="mt-3 text-center">
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-play-fill"></i> Run March 2023 Simulation
+                </button>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- Improved Model Simulation Section -->
+        <div class="project-highlight mb-4" style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
+            <div class="d-flex justify-content-between align-items-start">
+                <h3><i class="bi bi-stars text-success"></i> Improved Model Simulation</h3>
+                
+                {% if has_improved_sim %}
+                <a href="/improved-details" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-clipboard-data"></i> View Details
+                </a>
+                {% endif %}
+            </div>
+            
+            {% if has_improved_sim %}
+            <div class="row mt-3">
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Final Portfolio</div>
+                            <div class="metric-value">
+                                {% if improved_performance and 'final_value' in improved_performance %}
+                                    ${{ improved_performance['final_value'] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Total Return</div>
+                            <div class="metric-value {% if improved_performance and 'total_return' in improved_performance and improved_performance['total_return']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if improved_performance and 'total_return' in improved_performance %}
+                                    {{ improved_performance['total_return'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Buy & Hold Return</div>
+                            <div class="metric-value {% if improved_performance and 'buy_hold_return' in improved_performance and improved_performance['buy_hold_return']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if improved_performance and 'buy_hold_return' in improved_performance %}
+                                    {{ improved_performance['buy_hold_return'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Trading Days</div>
+                            <div class="metric-value">{{ improved_performance['trading_days'] }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-2">
+                <a href="/improved-details" class="btn btn-success">
+                    <i class="bi bi-search"></i> View Detailed Trading History
+                </a>
+                <form action="/run-improved-simulation" method="post" class="d-inline ms-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-arrow-repeat"></i> Re-Run Improved Simulation
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <p>Run the simulation with our improved model featuring enhanced feature engineering and advanced model architecture.</p>
+            <p><strong>Features:</strong></p>
+            <ul>
+                <li>Hybrid LSTM-CNN neural network with bidirectional architecture</li>
+                <li>Ensemble model combining multiple algorithms for robust predictions</li>
+                <li>Enhanced feature engineering with 50+ technical indicators</li>
+                <li>Adaptive position sizing based on prediction confidence</li>
+                <li>More sophisticated trading strategy with risk management</li>
+            </ul>
+            <div class="text-center mt-3">
+                <form action="/train-improved-model" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-secondary">
+                        <i class="bi bi-gear"></i> Train Improved Model
+                    </button>
+                </form>
+                <form action="/run-improved-simulation" method="post" class="d-inline ms-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-play-fill"></i> Run Improved Simulation
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Realistic Strategy Simulation Section -->
+        <div class="project-highlight mb-4" style="background-color: #e3f2fd; border-left: 4px solid #2196f3;">
+            <div class="d-flex justify-content-between align-items-start">
+                <h3><i class="bi bi-graph-up-arrow text-primary"></i> Realistic Trading Strategy</h3>
+                
+                {% if has_realistic_sim %}
+                <a href="/realistic-details" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-clipboard-data"></i> View Details
+                </a>
+                {% endif %}
+            </div>
+            
+            {% if has_realistic_sim %}
+            <div class="row mt-3">
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Final Portfolio</div>
+                            <div class="metric-value">
+                                {% if realistic_performance and 'Final Portfolio Value ($)' in realistic_performance %}
+                                    ${{ realistic_performance['Final Portfolio Value ($)'] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Total Return</div>
+                            <div class="metric-value {% if realistic_performance and 'Total Return (%)' in realistic_performance and realistic_performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if realistic_performance and 'Total Return (%)' in realistic_performance %}
+                                    {{ realistic_performance['Total Return (%)'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Buy & Hold Return</div>
+                            <div class="metric-value {% if realistic_performance and 'Buy & Hold Return (%)' in realistic_performance and realistic_performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
+                                {% if realistic_performance and 'Buy & Hold Return (%)' in realistic_performance %}
+                                    {{ realistic_performance['Buy & Hold Return (%)'] }}%
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-label">Trading Days</div>
+                            <div class="metric-value">
+                                {% if realistic_performance and 'Number of Trading Days' in realistic_performance %}
+                                    {{ realistic_performance['Number of Trading Days'] }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-2">
+                <a href="/realistic-details" class="btn btn-primary">
+                    <i class="bi bi-search"></i> View Detailed Trading History
+                </a>
+                <form action="/run-realistic-simulation" method="post" class="d-inline ms-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-arrow-repeat"></i> Re-Run Realistic Simulation
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <p>Run the Realistic Trading Strategy simulation to see how a price-aware approach performs using current Tesla price of $248.71 as a starting point.</p>
+            <p><strong>Features:</strong></p>
+            <ul>
+                <li>Realistic price projections based on current Tesla price ($248.71)</li>
+                <li>Advanced trading strategy with dynamic position sizing</li>
+                <li>Price-aware decision making for March 24-28, 2025</li>
+                <li>Includes intraday price variations and transaction fees</li>
+            </ul>
+            <form action="/run-realistic-simulation" method="post" class="mt-3 text-center">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-play-fill"></i> Run Realistic Trading Strategy
                 </button>
             </form>
             {% endif %}

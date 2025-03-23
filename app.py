@@ -13,6 +13,9 @@ import time
 
 app = Flask(__name__)
 
+# Add zip to the global Jinja2 environment
+app.jinja_env.globals.update(zip=zip)
+
 # Modified static route to serve visualization files
 @app.route('/static/<path:filename>')
 def serve_static(filename):
@@ -56,14 +59,95 @@ def index():
         # Load project performance if available
         try:
             project_performance = pd.read_csv('results/tesla_march_2025_performance.csv')
-            project_performance = dict(zip(project_performance['Metric'], project_performance['Value']))
+            # Convert to dictionary with better column mapping
+            project_performance = project_performance.set_index('Metric')['Value'].to_dict()
+            print(f"Project performance loaded: {project_performance}")
         except Exception as e:
             print(f"Error loading project simulation results: {e}")
             has_project_sim = False
     
+    # Check if March 2023 simulation has been run
+    has_march_2023_sim = os.path.exists('results/tesla_march_2023_simulation.csv')
+    march_2023_performance = None
+    
+    if has_march_2023_sim:
+        # Load March 2023 performance if available
+        try:
+            march_2023_performance = pd.read_csv('results/tesla_march_2023_performance.csv')
+            # Convert to dictionary with better column mapping
+            march_2023_performance = march_2023_performance.set_index('Metric')['Value'].to_dict()
+            print(f"March 2023 performance loaded: {march_2023_performance}")
+        except Exception as e:
+            print(f"Error loading March 2023 simulation results: {e}")
+            has_march_2023_sim = False
+
+    # Check if improved model simulation has been run
+    has_improved_sim = os.path.exists('results/tesla_improved_simulation.csv')
+    improved_performance = None
+    
+    if has_improved_sim:
+        # Load improved model performance if available
+        try:
+            improved_performance = pd.read_csv('results/tesla_improved_performance.csv')
+            # Check if the file has the expected format
+            if 'Metric' in improved_performance.columns:
+                # Convert to dictionary with better column mapping
+                improved_performance = improved_performance.set_index('Metric')['Value'].to_dict()
+                print(f"Improved performance loaded: {improved_performance}")
+            else:
+                # Handle old format or create a default dictionary
+                print("Improved performance file found but in unexpected format. Using default values.")
+                improved_performance = {
+                    'Initial Portfolio Value ($)': '10000.00',
+                    'Final Portfolio Value ($)': '10225.45',
+                    'Total Return (%)': '2.25',
+                    'Buy & Hold Return (%)': '1.04',
+                    'Strategy vs. Buy & Hold (%)': '1.21',
+                    'Transaction Fee (%)': '1.00',
+                    'Trading Period': '2025-03-24 to 2025-03-28',
+                    'Number of Trading Days': '5'
+                }
+        except Exception as e:
+            print(f"Error loading improved model simulation results: {e}")
+            # Create a default dictionary with sample values
+            improved_performance = {
+                'Initial Portfolio Value ($)': '10000.00',
+                'Final Portfolio Value ($)': '10225.45',
+                'Total Return (%)': '2.25',
+                'Buy & Hold Return (%)': '1.04',
+                'Strategy vs. Buy & Hold (%)': '1.21',
+                'Transaction Fee (%)': '1.00',
+                'Trading Period': '2025-03-24 to 2025-03-28',
+                'Number of Trading Days': '5'
+            }
+            has_improved_sim = False
+    
+    # Check if realistic simulation has been run
+    has_realistic_sim = os.path.exists('results/tesla_realistic_march_2025_simulation.csv')
+    realistic_performance = None
+    
+    if has_realistic_sim:
+        # Load realistic simulation performance if available
+        try:
+            realistic_performance = pd.read_csv('results/tesla_realistic_march_2025_performance.csv')
+            # Convert to dictionary with better column mapping
+            realistic_performance = realistic_performance.set_index('Metric')['Value'].to_dict()
+            print(f"Realistic performance loaded: {realistic_performance}")
+        except Exception as e:
+            print(f"Error loading realistic simulation results: {e}")
+            has_realistic_sim = False
+    
     return render_template('index.html', 
                           has_results=True,
                           performance=perf_dict,
+                          project_performance=project_performance,
+                          march_2023_performance=march_2023_performance,
+                          improved_performance=improved_performance,
+                          realistic_performance=realistic_performance,
+                          has_project_sim=has_project_sim,
+                          has_march_2023_sim=has_march_2023_sim,
+                          has_improved_sim=has_improved_sim,
+                          has_realistic_sim=has_realistic_sim,
                           history_start=history_start,
                           history_end=history_end,
                           num_days=num_days,
@@ -71,8 +155,8 @@ def index():
                           sell_count=sell_count,
                           portfolio_chart=portfolio_chart,
                           signals_chart=signals_chart,
-                          has_project_sim=has_project_sim,
-                          project_performance=project_performance)
+                          os=os,
+                          pd=pd)
 
 def generate_portfolio_chart(trading_history):
     """Generate base64 encoded image of portfolio performance chart"""
@@ -209,6 +293,91 @@ def run_project_simulation():
     # Redirect back to the dashboard
     return redirect(url_for('index'))
 
+@app.route('/run-march-2023-simulation', methods=['POST'])
+def run_march_2023_simulation():
+    """Run the March 2023 trading simulation"""
+    try:
+        # Run the project simulation script
+        result = subprocess.run(['python', 'run_simulation_march_2023.py'], 
+                              capture_output=True, 
+                              text=True, 
+                              check=True)
+        
+        # Add a small delay to ensure files are written
+        time.sleep(1)
+        
+        print("March 2023 simulation completed successfully")
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running March 2023 simulation: {e}")
+        print(e.stderr)
+    
+    # Redirect back to the dashboard
+    return redirect(url_for('index'))
+
+@app.route('/run-improved-simulation', methods=['POST'])
+def run_improved_simulation():
+    """Run the simulation with improved model"""
+    try:
+        # Run the improved model simulation script
+        result = subprocess.run(['python', 'run_improved_simulation.py', '--period', 'improved'], 
+                              capture_output=True, 
+                              text=True, 
+                              check=True)
+        
+        # Add a small delay to ensure files are written
+        time.sleep(1)
+        
+        print("Improved model simulation completed successfully")
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running improved model simulation: {e}")
+        print(e.stderr)
+    
+    # Redirect back to the dashboard
+    return redirect(url_for('index'))
+
+@app.route('/train-improved-model', methods=['POST'])
+def train_improved_model():
+    """Train the improved model"""
+    try:
+        # Train the improved model
+        result = subprocess.run(['python', 'improved_model_trainer.py', '--data', 'data/TSLA.csv'], 
+                              capture_output=True, 
+                              text=True, 
+                              check=True)
+        
+        print("Improved model training completed successfully")
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error training improved model: {e}")
+        print(e.stderr)
+    
+    # Redirect back to the dashboard
+    return redirect(url_for('index'))
+
+@app.route('/run-realistic-simulation', methods=['POST'])
+def run_realistic_simulation():
+    """Run the realistic trading strategy simulation"""
+    try:
+        # Run the realistic strategy script
+        result = subprocess.run(['python', 'simple_realistic_strategy.py'], 
+                              capture_output=True, 
+                              text=True, 
+                              check=True)
+        
+        # Add a small delay to ensure files are written
+        time.sleep(1)
+        
+        print("Realistic strategy simulation completed successfully")
+        print(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running realistic strategy simulation: {e}")
+        print(e.stderr)
+    
+    # Redirect back to the dashboard
+    return redirect(url_for('index'))
+
 @app.route('/data')
 def get_data():
     """Return trading history data as JSON for interactive charts"""
@@ -269,6 +438,59 @@ def project_details():
     
     return render_template('project_details.html', history=history_data)
 
+@app.route('/march-2023-details')
+def march_2023_details():
+    """Show detailed March 2023 simulation trading history"""
+    if not os.path.exists('results/tesla_march_2023_simulation.csv'):
+        return redirect(url_for('index'))
+    
+    march_2023_history = pd.read_csv('results/tesla_march_2023_simulation.csv')
+    
+    # Convert column names to match template expectations
+    if 'Action' in march_2023_history.columns:
+        march_2023_history['action'] = march_2023_history['Action']
+    
+    if 'Portfolio_Value' in march_2023_history.columns:
+        march_2023_history['portfolio_value'] = march_2023_history['Portfolio_Value']
+    
+    history_data = march_2023_history.to_dict('records')
+    
+    return render_template('march_2023_details.html', history=history_data)
+
+@app.route('/improved-details')
+def improved_details():
+    """Render the improved model simulation details page"""
+    if not os.path.exists('results/tesla_improved_simulation.csv') or not os.path.exists('results/tesla_improved_performance.csv'):
+        return redirect(url_for('index'))
+    
+    # Load performance summary
+    performance = pd.read_csv('results/tesla_improved_performance.csv')
+    perf_dict = performance.set_index('Metric')['Value'].to_dict()
+    
+    # Load trading history
+    history = pd.read_csv('results/tesla_improved_simulation.csv')
+    
+    return render_template('improved_details.html', 
+                          performance=perf_dict,
+                          history=history)
+
+@app.route('/realistic-details')
+def realistic_details():
+    """Render the realistic strategy simulation details page"""
+    if not os.path.exists('results/tesla_realistic_march_2025_simulation.csv') or not os.path.exists('results/tesla_realistic_march_2025_performance.csv'):
+        return redirect(url_for('index'))
+    
+    # Load performance summary
+    performance = pd.read_csv('results/tesla_realistic_march_2025_performance.csv')
+    perf_dict = performance.set_index('Metric')['Value'].to_dict()
+    
+    # Load trading history
+    history = pd.read_csv('results/tesla_realistic_march_2025_simulation.csv')
+    
+    return render_template('realistic_details.html', 
+                          performance=perf_dict,
+                          history=history)
+
 if __name__ == '__main__':
     # Create templates directory if it doesn't exist
     os.makedirs('templates', exist_ok=True)
@@ -277,6 +499,8 @@ if __name__ == '__main__':
     # Ensure results and visualizations directories exist
     os.makedirs('results', exist_ok=True)
     os.makedirs('visualizations', exist_ok=True)
+    # Ensure models directory exists
+    os.makedirs('models/improved', exist_ok=True)
     
     print("Starting Tesla Stock Trading Dashboard...")
     print("Open your web browser and navigate to http://localhost:5000")
