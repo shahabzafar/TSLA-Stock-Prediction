@@ -1,0 +1,65 @@
+{
+    "current_price": 248.71,
+    "days": 5,
+    "prediction_date": "2025-03-23",
+    "overall_change": 3.01,
+    "initial_portfolio": 10000.0,
+    "final_portfolio": 10040.1,
+    "portfolio_change": 0.4,
+    "initial_shares": 0.0,
+    "final_shares": 7.4194,
+    "recommendation": "Buy 7.42 shares over the next 5 days",
+    "predictions": [
+        {
+            "Date": "2025-03-24",
+            "Predicted_Price": 254.82,
+            "Action": "buy",
+            "Confidence": 0.25,
+            "Portfolio_Value": 10028.95,
+            "Shares_Held": 4.9367,
+            "Cash": 8770.97,
+            "Investment_Amount": 1229.03
+        },
+        {
+            "Date": "2025-03-25",
+            "Predicted_Price": 254.42,
+            "Action": "sell",
+            "Confidence": 0.02,
+            "Portfolio_Value": 10026.97,
+            "Shares_Held": 4.8976,
+            "Cash": 8780.91,
+            "Investment_Amount": -9.95
+        },
+        {
+            "Date": "2025-03-26",
+            "Predicted_Price": 257.05,
+            "Action": "buy",
+            "Confidence": 0.1,
+            "Portfolio_Value": 10044.07,
+            "Shares_Held": 6.6784,
+            "Cash": 8327.38,
+            "Investment_Amount": 453.53
+        },
+        {
+            "Date": "2025-03-27",
+            "Predicted_Price": 254.57,
+            "Action": "sell",
+            "Confidence": 0.1,
+            "Portfolio_Value": 10028.2,
+            "Shares_Held": 6.3558,
+            "Cash": 8410.23,
+            "Investment_Amount": -82.93
+        },
+        {
+            "Date": "2025-03-28",
+            "Predicted_Price": 256.21,
+            "Action": "buy",
+            "Confidence": 0.06,
+            "Portfolio_Value": 10040.1,
+            "Shares_Held": 7.4194,
+            "Cash": 8139.21,
+            "Investment_Amount": 271.02
+        }
+    ],
+    "chart_path": "next_days_prediction.png"
+}

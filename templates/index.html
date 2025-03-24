@@ -8,620 +8,1298 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f8f9fa;
-            padding-top: 20px;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
         }
-        .dashboard-card {
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            background-color: white;
+        
+        .bg-light {
+            background-color: #f8f9fa !important;
         }
-        .card-header {
-            background-color: #343a40;
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-            padding: 15px 20px;
-            font-weight: 600;
-        }
-        .metric-card {
-            height: 100%;
-            transition: transform 0.2s;
-        }
-        .metric-card:hover {
-            transform: translateY(-5px);
-        }
-        .metric-value {
-            font-size: 24px;
-            font-weight: 600;
-        }
+        
         .positive-return {
             color: #28a745;
         }
+        
         .negative-return {
             color: #dc3545;
         }
+        
         .chart-container {
             width: 100%;
-            height: 400px;
+            overflow: hidden;
+            border-radius: 5px;
         }
-        .header-icon {
-            margin-right: 10px;
+        
+        .quick-stats-row .card {
+            transition: all 0.3s;
         }
-        .nav-tabs .nav-link {
-            color: #495057;
+        
+        .quick-stats-row .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
-        .nav-tabs .nav-link.active {
+        
+        .accordion-button:not(.collapsed) {
+            background-color: #e9f0ff;
+            color: #0d6efd;
+        }
+        
+        #yourPredictionReady {
+            display: flex;
+            align-items: center;
+            color: #0d6efd;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        #yourPredictionReady:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #0d6efd;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+            }
+            
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+            }
+            
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+            }
+        }
+        
+        /* Card shadows and borders */
+        .card {
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card .card-header {
             font-weight: 600;
         }
-        .project-highlight {
-            background-color: #f0f8ff;
-            border-left: 4px solid #007bff;
-            padding: 15px;
-            margin-bottom: 20px;
+        
+        /* Button styling */
+        .btn {
+            border-radius: 5px;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+        
+        /* Form control styling */
+        .form-control, .form-select {
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        
+        /* Table styling */
+        .table th {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+        
+        /* Toast styling */
+        .toast {
+            background-color: white;
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Footer styling */
+        footer {
+            border-top: 1px solid #e9ecef;
+            padding-top: 2rem;
+            margin-top: 3rem;
+            color: #6c757d;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header class="mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="display-5 fw-bold">
-                    <i class="bi bi-graph-up-arrow text-success header-icon"></i>
-                    Tesla Stock Trading Dashboard
+    <div class="container-fluid px-4 py-3">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-5 mb-3">
+                    <i class="bi bi-graph-up-arrow text-primary"></i> Tesla Stock Trading Simulator
                 </h1>
-                
-                <form action="/run-simulation" method="post">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-play-fill"></i> Run Simulation
-                    </button>
-                </form>
-            </div>
-            <p class="lead text-muted">Visualize your ML-based Tesla stock trading strategy performance</p>
-        </header>
-
-        {% if not has_results %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            No simulation results found. Click "Run Simulation" to generate results.
-        </div>
-        {% else %}
-        
-        <!-- Project Simulation Section -->
-        <div class="project-highlight mb-4">
-            <div class="d-flex justify-content-between align-items-start">
-                <h3><i class="bi bi-calendar-check text-primary"></i> March 2025 Project Simulation</h3>
-                
-                {% if has_project_sim %}
-                <a href="/project-details" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-clipboard-data"></i> View Details
-                </a>
-                {% endif %}
-            </div>
-            
-            {% if has_project_sim %}
-            <div class="row mt-3">
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Final Portfolio</div>
-                            <div class="metric-value">
-                                {% if project_performance and 'Final Portfolio Value ($)' in project_performance %}
-                                    ${{ project_performance['Final Portfolio Value ($)'] }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Total Return</div>
-                            <div class="metric-value {% if project_performance and 'Total Return (%)' in project_performance and project_performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if project_performance and 'Total Return (%)' in project_performance %}
-                                    {{ project_performance['Total Return (%)'] }}%
-                                {% elif project_performance and 'Total Return' in project_performance %}
-                                    {{ project_performance['Total Return'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Buy & Hold Return</div>
-                            <div class="metric-value {% if project_performance and 'Buy & Hold Return (%)' in project_performance and project_performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if project_performance and 'Buy & Hold Return (%)' in project_performance %}
-                                    {{ project_performance['Buy & Hold Return (%)'] }}%
-                                {% elif project_performance and 'Buy & Hold Return' in project_performance %}
-                                    {{ project_performance['Buy & Hold Return'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Trading Days</div>
-                            <div class="metric-value">
-                                {% if project_performance and 'Number of Trading Days' in project_performance %}
-                                    {{ project_performance['Number of Trading Days'] }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center mt-2">
-                <a href="/project-details" class="btn btn-primary">
-                    <i class="bi bi-search"></i> View Detailed Trading History
-                </a>
-                <form action="/run-project-simulation" method="post" class="d-inline ms-2">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-arrow-repeat"></i> Re-Run Project Simulation
-                    </button>
-                </form>
-            </div>
-            {% else %}
-            <p>Run the March 2025 project simulation to see how your trading strategy performs during the specific project period (March 24-28, 2025).</p>
-            <p><strong>Features:</strong></p>
-            <ul>
-                <li>Simulate trading specifically for the project timeframe</li>
-                <li>Follow exact project requirements: 9:00 AM order submission, 10:00 AM execution</li>
-                <li>Apply 1% transaction fee as specified in the project</li>
-                <li>Generate detailed order history with proper order format</li>
-            </ul>
-            <form action="/run-project-simulation" method="post" class="mt-3 text-center">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-play-fill"></i> Run Project Simulation
-                </button>
-            </form>
-            {% endif %}
-        </div>
-
-        <!-- March 2023 Full Month Simulation Section -->
-        <div class="project-highlight mb-4" style="background-color: #fff8e1; border-left: 4px solid #ff9800;">
-            <div class="d-flex justify-content-between align-items-start">
-                <h3><i class="bi bi-calendar3 text-warning"></i> March 2023 Full Month Simulation</h3>
-                
-                {% if os.path.exists('results/tesla_march_2023_simulation.csv') %}
-                <a href="/march-2023-details" class="btn btn-outline-warning btn-sm">
-                    <i class="bi bi-clipboard-data"></i> View Details
-                </a>
-                {% endif %}
-            </div>
-            
-            {% if os.path.exists('results/tesla_march_2023_simulation.csv') and os.path.exists('results/tesla_march_2023_performance.csv') %}
-            {% set march_2023_performance = pd.read_csv('results/tesla_march_2023_performance.csv') %}
-            {% set march_2023_perf_dict = dict(zip(march_2023_performance['Metric'], march_2023_performance['Value'])) %}
-            
-            <div class="row mt-3">
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Final Portfolio</div>
-                            <div class="metric-value">${{ march_2023_perf_dict['Final Portfolio Value ($)'] }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Total Return</div>
-                            <div class="metric-value {% if march_2023_perf_dict and 'Total Return (%)' in march_2023_perf_dict and march_2023_perf_dict['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if march_2023_perf_dict and 'Total Return (%)' in march_2023_perf_dict %}
-                                    {{ march_2023_perf_dict['Total Return (%)'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Buy & Hold Return</div>
-                            <div class="metric-value {% if march_2023_perf_dict and 'Buy & Hold Return (%)' in march_2023_perf_dict and march_2023_perf_dict['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if march_2023_perf_dict and 'Buy & Hold Return (%)' in march_2023_perf_dict %}
-                                    {{ march_2023_perf_dict['Buy & Hold Return (%)'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Trading Days</div>
-                            <div class="metric-value">
-                                {% if march_2023_perf_dict and 'Number of Trading Days' in march_2023_perf_dict %}
-                                    {{ march_2023_perf_dict['Number of Trading Days'] }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center mt-2">
-                <a href="/march-2023-details" class="btn btn-warning">
-                    <i class="bi bi-search"></i> View Detailed Trading History
-                </a>
-                <form action="/run-march-2023-simulation" method="post" class="d-inline ms-2">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-arrow-repeat"></i> Re-Run March 2023 Simulation
-                    </button>
-                </form>
-            </div>
-            {% else %}
-            <p>Run the March 2023 full month simulation to see how your trading strategy performs over a longer time period with real historical data.</p>
-            <p><strong>Features:</strong></p>
-            <ul>
-                <li>Simulate trading for the entire month of March 2023 (all trading days)</li>
-                <li>Test your strategy's performance over a full trading month</li>
-                <li>Uses the same 9:00 AM submission and 10:00 AM execution times</li>
-                <li>Apply 1% transaction fee for realistic trading conditions</li>
-            </ul>
-            <form action="/run-march-2023-simulation" method="post" class="mt-3 text-center">
-                <button type="submit" class="btn btn-warning">
-                    <i class="bi bi-play-fill"></i> Run March 2023 Simulation
-                </button>
-            </form>
-            {% endif %}
-        </div>
-
-        <!-- Improved Model Simulation Section -->
-        <div class="project-highlight mb-4" style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
-            <div class="d-flex justify-content-between align-items-start">
-                <h3><i class="bi bi-stars text-success"></i> Improved Model Simulation</h3>
-                
-                {% if has_improved_sim %}
-                <a href="/improved-details" class="btn btn-outline-success btn-sm">
-                    <i class="bi bi-clipboard-data"></i> View Details
-                </a>
-                {% endif %}
-            </div>
-            
-            {% if has_improved_sim %}
-            <div class="row mt-3">
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Final Portfolio</div>
-                            <div class="metric-value">
-                                {% if improved_performance and 'final_value' in improved_performance %}
-                                    ${{ improved_performance['final_value'] }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Total Return</div>
-                            <div class="metric-value {% if improved_performance and 'total_return' in improved_performance and improved_performance['total_return']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if improved_performance and 'total_return' in improved_performance %}
-                                    {{ improved_performance['total_return'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Buy & Hold Return</div>
-                            <div class="metric-value {% if improved_performance and 'buy_hold_return' in improved_performance and improved_performance['buy_hold_return']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if improved_performance and 'buy_hold_return' in improved_performance %}
-                                    {{ improved_performance['buy_hold_return'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Trading Days</div>
-                            <div class="metric-value">{{ improved_performance['trading_days'] }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center mt-2">
-                <a href="/improved-details" class="btn btn-success">
-                    <i class="bi bi-search"></i> View Detailed Trading History
-                </a>
-                <form action="/run-improved-simulation" method="post" class="d-inline ms-2">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-arrow-repeat"></i> Re-Run Improved Simulation
-                    </button>
-                </form>
-            </div>
-            {% else %}
-            <p>Run the simulation with our improved model featuring enhanced feature engineering and advanced model architecture.</p>
-            <p><strong>Features:</strong></p>
-            <ul>
-                <li>Hybrid LSTM-CNN neural network with bidirectional architecture</li>
-                <li>Ensemble model combining multiple algorithms for robust predictions</li>
-                <li>Enhanced feature engineering with 50+ technical indicators</li>
-                <li>Adaptive position sizing based on prediction confidence</li>
-                <li>More sophisticated trading strategy with risk management</li>
-            </ul>
-            <div class="text-center mt-3">
-                <form action="/train-improved-model" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-secondary">
-                        <i class="bi bi-gear"></i> Train Improved Model
-                    </button>
-                </form>
-                <form action="/run-improved-simulation" method="post" class="d-inline ms-2">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-play-fill"></i> Run Improved Simulation
-                    </button>
-                </form>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Realistic Strategy Simulation Section -->
-        <div class="project-highlight mb-4" style="background-color: #e3f2fd; border-left: 4px solid #2196f3;">
-            <div class="d-flex justify-content-between align-items-start">
-                <h3><i class="bi bi-graph-up-arrow text-primary"></i> Realistic Trading Strategy</h3>
-                
-                {% if has_realistic_sim %}
-                <a href="/realistic-details" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-clipboard-data"></i> View Details
-                </a>
-                {% endif %}
-            </div>
-            
-            {% if has_realistic_sim %}
-            <div class="row mt-3">
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Final Portfolio</div>
-                            <div class="metric-value">
-                                {% if realistic_performance and 'Final Portfolio Value ($)' in realistic_performance %}
-                                    ${{ realistic_performance['Final Portfolio Value ($)'] }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Total Return</div>
-                            <div class="metric-value {% if realistic_performance and 'Total Return (%)' in realistic_performance and realistic_performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if realistic_performance and 'Total Return (%)' in realistic_performance %}
-                                    {{ realistic_performance['Total Return (%)'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Buy & Hold Return</div>
-                            <div class="metric-value {% if realistic_performance and 'Buy & Hold Return (%)' in realistic_performance and realistic_performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                                {% if realistic_performance and 'Buy & Hold Return (%)' in realistic_performance %}
-                                    {{ realistic_performance['Buy & Hold Return (%)'] }}%
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <div class="metric-label">Trading Days</div>
-                            <div class="metric-value">
-                                {% if realistic_performance and 'Number of Trading Days' in realistic_performance %}
-                                    {{ realistic_performance['Number of Trading Days'] }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center mt-2">
-                <a href="/realistic-details" class="btn btn-primary">
-                    <i class="bi bi-search"></i> View Detailed Trading History
-                </a>
-                <form action="/run-realistic-simulation" method="post" class="d-inline ms-2">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-arrow-repeat"></i> Re-Run Realistic Simulation
-                    </button>
-                </form>
-            </div>
-            {% else %}
-            <p>Run the Realistic Trading Strategy simulation to see how a price-aware approach performs using current Tesla price of $248.71 as a starting point.</p>
-            <p><strong>Features:</strong></p>
-            <ul>
-                <li>Realistic price projections based on current Tesla price ($248.71)</li>
-                <li>Advanced trading strategy with dynamic position sizing</li>
-                <li>Price-aware decision making for March 24-28, 2025</li>
-                <li>Includes intraday price variations and transaction fees</li>
-            </ul>
-            <form action="/run-realistic-simulation" method="post" class="mt-3 text-center">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-play-fill"></i> Run Realistic Trading Strategy
-                </button>
-            </form>
-            {% endif %}
-        </div>
-
-        <!-- Performance Overview -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Initial Investment</div>
-                    <div class="metric-value">${{ performance['Initial Portfolio Value ($)'] }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Final Portfolio Value</div>
-                    <div class="metric-value">${{ performance['Final Portfolio Value ($)'] }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Total Return</div>
-                    <div class="metric-value {% if performance['Total Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                        {{ performance['Total Return (%)'] }}%
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Annualized Return</div>
-                    <div class="metric-value {% if performance['Annualized Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                        {{ performance['Annualized Return (%)'] }}%
-                    </div>
-                </div>
+                <p class="lead">
+                    Visualize your ML-based Tesla stock trading strategy performance
+                </p>
             </div>
         </div>
 
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Sharpe Ratio</div>
-                    <div class="metric-value">{{ performance['Sharpe Ratio'] }}</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Max Drawdown</div>
-                    <div class="metric-value negative-return">{{ performance['Max Drawdown (%)'] }}%</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Buy & Hold Return</div>
-                    <div class="metric-value {% if performance['Buy & Hold Return (%)']|float > 0 %}positive-return{% else %}negative-return{% endif %}">
-                        {{ performance['Buy & Hold Return (%)'] }}%
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="dashboard-card metric-card p-3">
-                    <div class="text-muted small">Trading Period</div>
-                    <div class="metric-value">{{ num_days }} days</div>
-                    <div class="small text-muted mt-1">{{ history_start }} to {{ history_end }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts -->
-        <div class="dashboard-card mb-4">
-            <div class="card-header">
-                <i class="bi bi-graph-up header-icon"></i>
-                Performance Charts
-            </div>
-            <div class="card-body">
-                <ul class="nav nav-tabs" id="myTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="portfolio-tab" data-bs-toggle="tab" data-bs-target="#portfolio" type="button" role="tab" aria-controls="portfolio" aria-selected="true">Portfolio Performance</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="signals-tab" data-bs-toggle="tab" data-bs-target="#signals" type="button" role="tab" aria-controls="signals" aria-selected="false">Trading Signals</button>
-                    </li>
-                </ul>
-                <div class="tab-content mt-3" id="myTabContent">
-                    <div class="tab-pane fade show active" id="portfolio" role="tabpanel" aria-labelledby="portfolio-tab">
-                        <div class="chart-container">
-                            <img src="data:image/png;base64,{{ portfolio_chart }}" alt="Portfolio Performance Chart" class="img-fluid" />
+        <!-- Project Simulation Card -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" checked disabled>
+                                <label class="form-check-label h5 mb-0">
+                                    March 2025 Project Simulation
+                                </label>
+                            </div>
                         </div>
+                        <a href="/project-details" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View Details
+                        </a>
                     </div>
-                    <div class="tab-pane fade" id="signals" role="tabpanel" aria-labelledby="signals-tab">
-                        <div class="chart-container">
-                            <img src="data:image/png;base64,{{ signals_chart }}" alt="Trading Signals Chart" class="img-fluid" />
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Final Portfolio</h6>
+                                        <h3 class="mb-0">$10399.03</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Total Return</h6>
+                                        <h3 class="mb-0 text-success">3.99%</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Buy & Hold Return</h6>
+                                        <h3 class="mb-0 text-success">1.04%</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Trading Days</h6>
+                                        <h3 class="mb-0">5</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <a href="/project-details" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-bar-chart-line"></i> View Detailed Trading History
+                            </a>
+                            <form action="/run-project-simulation" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-arrow-repeat"></i> Re-Run Project Simulation
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Trading Activity -->
-        <div class="dashboard-card">
-            <div class="card-header">
-                <i class="bi bi-table header-icon"></i>
-                Trading Activity
-            </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                            <div>
-                                <h5>Buy Trades</h5>
-                                <div class="h3 text-success">{{ buy_count }}</div>
-                            </div>
-                            <i class="bi bi-arrow-up-circle text-success" style="font-size: 2.5rem;"></i>
+        <!-- Portfolio Dashboard -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-wallet2"></i> My Tesla Portfolio Dashboard
+                        </h5>
+                        <div>
+                            <button type="button" id="editPortfolioBtn" class="btn btn-sm btn-outline-primary me-2">
+                                <i class="bi bi-pencil"></i> Edit Portfolio
+                            </button>
+                            <button type="button" id="resetPortfolioBtn" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Reset Portfolio
+                            </button>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                            <div>
-                                <h5>Sell Trades</h5>
-                                <div class="h3 text-danger">{{ sell_count }}</div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <!-- Portfolio Summary (View Mode) -->
+                            <div id="portfolioSummaryView" class="col-12">
+                                <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">Initial Investment</h6>
+                                                <h3 class="mb-0">$<span id="initialInvestmentDisplay">10000.00</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">Total Money Invested</h6>
+                                                <h3 class="mb-0">$<span id="totalInvestedDisplay">0.00</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">Cash Available</h6>
+                                                <h3 class="mb-0">$<span id="cashAvailableDisplay">10000.00</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">Current Portfolio Value</h6>
+                                                <h3 class="mb-0">$<span id="currentValueDisplay">10000.00</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">TSLA Shares Owned</h6>
+                                                <h3 class="mb-0"><span id="sharesOwnedDisplay">0.00</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">Average Buy Price</h6>
+                                                <h3 class="mb-0">$<span id="avgBuyPriceDisplay">0.00</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">Total Return</h6>
+                                                <h3 class="mb-0"><span id="totalReturnDisplay" class="text-success">0.00%</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body text-center py-3">
+                                                <h6 class="text-muted mb-2">Last Updated</h6>
+                                                <h3 class="mb-0 small"><span id="lastUpdatedDisplay">Never</span></h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <i class="bi bi-arrow-down-circle text-danger" style="font-size: 2.5rem;"></i>
+                            
+                            <!-- Portfolio Edit Form (Edit Mode - Initially Hidden) -->
+                            <div id="portfolioEditForm" class="col-12 d-none">
+                                <form id="updatePortfolioForm">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="initialInvestment" class="form-label">Initial Investment ($)</label>
+                                            <input type="number" class="form-control" id="initialInvestment" min="0" step="0.01" value="10000.00">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="currentStockPrice" class="form-label">Current TSLA Stock Price ($)</label>
+                                            <input type="number" class="form-control" id="currentStockPrice" min="0" step="0.01" value="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="sharesOwned" class="form-label">TSLA Shares Owned</label>
+                                            <input type="number" class="form-control" id="sharesOwned" min="0" step="0.0001" value="0.00">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="avgBuyPrice" class="form-label">Average Buy Price ($)</label>
+                                            <input type="number" class="form-control" id="avgBuyPrice" min="0" step="0.01" value="0.00">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="cashAvailable" class="form-label">Cash Available ($)</label>
+                                            <input type="number" class="form-control" id="cashAvailable" min="0" step="0.01" value="10000.00">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Current Portfolio Value</label>
+                                            <div class="form-control bg-light" id="calculatedPortfolioValue">$10,000.00</div>
+                                            <div class="form-text small">Auto-calculated based on shares and current price</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end mt-3">
+                                        <button type="button" id="cancelEditBtn" class="btn btn-outline-secondary me-2">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </button>
+                                        <button type="submit" id="savePortfolioBtn" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> Save Portfolio
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Transaction History Preview -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0"><i class="bi bi-clock-history"></i> Recent Transactions</h6>
+                                    <button type="button" id="addTransactionBtn" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-plus-circle"></i> Add Transaction
+                                    </button>
+                                </div>
+                                <div class="table-responsive border rounded">
+                                    <table class="table table-hover table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Type</th>
+                                                <th>Shares</th>
+                                                <th>Price</th>
+                                                <th>Fee</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="transactionsTable">
+                                            <tr class="text-center text-muted">
+                                                <td colspan="6">No transactions yet</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Add Transaction Modal -->
+                                <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add Transaction</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <form id="addTransactionForm">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Transaction Type</label>
+                                                        <div class="d-flex">
+                                                            <div class="form-check me-4">
+                                                                <input class="form-check-input" type="radio" name="transactionType" id="buyOption" value="buy" checked>
+                                                                <label class="form-check-label" for="buyOption">Buy</label>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio" name="transactionType" id="sellOption" value="sell">
+                                                                <label class="form-check-label" for="sellOption">Sell</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="transactionDate" class="form-label">Date</label>
+                                                        <input type="date" class="form-control" id="transactionDate" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="transactionShares" class="form-label">Shares</label>
+                                                        <input type="number" class="form-control" id="transactionShares" min="0.0001" step="0.0001" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="transactionPrice" class="form-label">Price Per Share ($)</label>
+                                                        <input type="number" class="form-control" id="transactionPrice" min="0.01" step="0.01" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Transaction Details</label>
+                                                        <div class="card bg-light">
+                                                            <div class="card-body p-3">
+                                                                <div class="d-flex justify-content-between mb-2">
+                                                                    <span>Subtotal:</span>
+                                                                    <span id="transactionSubtotal">$0.00</span>
+                                                                </div>
+                                                                <div class="d-flex justify-content-between mb-2">
+                                                                    <span>Fee (1%):</span>
+                                                                    <span id="transactionFee">$0.00</span>
+                                                                </div>
+                                                                <hr class="my-2">
+                                                                <div class="d-flex justify-content-between fw-bold">
+                                                                    <span>Total:</span>
+                                                                    <span id="transactionTotal">$0.00</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Warning messages -->
+                                                    <div id="cashWarning" class="alert alert-warning d-none mb-3">
+                                                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                                        Insufficient cash available. You have <span id="cashAvailableAmount">$0.00</span>
+                                                    </div>
+                                                    <div id="sharesWarning" class="alert alert-warning d-none mb-3">
+                                                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                                        You don't have enough shares. You own <span id="sharesOwnedAmount">0</span> shares.
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="button" id="submitTransactionBtn" class="btn btn-primary">Add Transaction</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="text-center mt-3">
-                    <a href="/details" class="btn btn-outline-primary">
-                        <i class="bi bi-table"></i> View Detailed Trading History
-                    </a>
                 </div>
             </div>
         </div>
-        {% endif %}
-        
-        <!-- Footer -->
-        <footer class="mt-5 pt-3 pb-3 text-center text-muted border-top">
-            <p>Machine Learning & Data Mining - Tesla Stock Trading Project</p>
-        </footer>
+
+        <!-- Next Days Stock Prediction -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calendar-check"></i> Next Days Stock Prediction
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Prediction Form -->
+                            <div class="col-md-5">
+                                <div class="p-4 border rounded bg-light shadow-sm h-100">
+                                    <h5 class="mb-4"><i class="bi bi-input-cursor-text"></i> Input Parameters</h5>
+                                    <form id="nextDaysPredictionForm" action="/run-next-days-prediction" method="post">
+                                        <div class="mb-3">
+                                            <label for="current_price" class="form-label">Today's Closing Price ($)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                                <input type="number" class="form-control" id="current_price" name="current_price" 
+                                                    min="1" step="0.01" placeholder="Enter TSLA price" required>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="days" class="form-label">Days to Predict</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                                                <select class="form-select" id="days" name="days">
+                                                    <option value="5" selected>5 days (1 week)</option>
+                                                    <option value="10">10 days (2 weeks)</option>
+                                                    <option value="20">20 days (1 month)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="accordion mb-3" id="portfolioAccordion">
+                                            <div class="accordion-item">
+                                                <h2 class="accordion-header" id="portfolioHeading">
+                                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#portfolioCollapse" aria-expanded="false" aria-controls="portfolioCollapse">
+                                                        <i class="bi bi-wallet2 me-2"></i> Portfolio Tracking (Optional)
+                                                    </button>
+                                                </h2>
+                                                <div id="portfolioCollapse" class="accordion-collapse collapse" aria-labelledby="portfolioHeading" data-bs-parent="#portfolioAccordion">
+                                                    <div class="accordion-body">
+                                                        <div class="mb-3">
+                                                            <label for="portfolio_value" class="form-label">Portfolio Value ($)</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text"><i class="bi bi-piggy-bank"></i></span>
+                                                                <input type="number" class="form-control" id="portfolio_value" name="portfolio_value" 
+                                                                    min="0" step="0.01" value="10000">
+                                                            </div>
+                                                            <div class="form-text small">Total value of your investment portfolio</div>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="shares_owned" class="form-label">TSLA Shares Owned</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text"><i class="bi bi-graph-up"></i></span>
+                                                                <input type="number" class="form-control" id="shares_owned" name="shares_owned" 
+                                                                    min="0" step="0.0001" value="0">
+                                                            </div>
+                                                            <div class="form-text small">Number of Tesla shares currently in your portfolio</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" id="runPredictionBtn" class="btn btn-primary">
+                                                <i class="bi bi-play-fill"></i> Generate Prediction
+                                            </button>
+                                            <button type="button" id="resetPredictionBtn" class="btn btn-outline-secondary mt-2">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Reset Calculator
+                                            </button>
+                                            <div class="form-text mt-2 small text-center">
+                                                <i class="bi bi-info-circle"></i> Predictions typically take 2-3 seconds to generate
+                                            </div>
+                                        </div>
+                                        <div id="predictionProgress" class="mt-3 d-none">
+                                            <div class="progress-indicator">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                                        <span class="visually-hidden">Loading...</span>
+                                                    </div>
+                                                    <span id="predictionStatus">Generating predictions...</span>
+                                                </div>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%"></div>
+                                                </div>
+                                                <div class="text-center mt-2 text-muted small">
+                                                    <i class="bi bi-cpu"></i> Neural network processing data...
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="predictionError" class="alert alert-danger mt-3 d-none"></div>
+                                        <div id="yourPredictionReady" class="mt-2 d-none"></div>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <!-- Prediction Results Preview -->
+                            <div class="col-md-7">
+                                <!-- No Predictions Yet Message (initially visible) -->
+                                <div id="noPredictionsMessage" class="h-100 d-flex flex-column justify-content-center align-items-center p-4 border rounded">
+                                    <div class="text-center mb-3">
+                                        <i class="bi bi-graph-up-arrow text-primary" style="font-size: 3rem;"></i>
+                                    </div>
+                                    <h5>No Predictions Yet</h5>
+                                    <p class="text-muted text-center">
+                                        Enter the current Tesla stock price and click "Generate Prediction" to see forecast for the next trading days.
+                                    </p>
+                                </div>
+                                
+                                <!-- Results Preview (initially hidden) -->
+                                <div id="predictionResultsPreview" class="d-none">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5><i class="bi bi-graph-up text-success"></i> Prediction Results</h5>
+                                        <a href="#" id="fullResultsBtn" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-arrows-fullscreen"></i> View Full Details
+                                        </a>
+                                    </div>
+                                    
+                                    <!-- Mini Chart Preview -->
+                                    <div class="border rounded p-2 mb-3 bg-light shadow-sm">
+                                        <img id="predictionChartPreview" src="" alt="Price Prediction Chart" class="img-fluid" style="width: 100%; border-radius: 5px;">
+                                    </div>
+                                    
+                                    <!-- Quick Stats -->
+                                    <div class="row mb-3 quick-stats-row">
+                                        <div class="col-md-4">
+                                            <div class="p-2 border rounded text-center bg-light shadow-sm">
+                                                <div class="small text-muted">5-Day Trend</div>
+                                                <div id="trendIndicator" class="h5 mb-0">
+                                                    <span class="positive-return">
+                                                        <i class="bi bi-arrow-up-right"></i> +0.00%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="p-2 border rounded text-center bg-light shadow-sm">
+                                                <div class="small text-muted">Current Price</div>
+                                                <div id="currentPriceDisplay" class="h5 mb-0">$0.00</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="p-2 border rounded text-center bg-light shadow-sm">
+                                                <div class="small text-muted">Projected Price</div>
+                                                <div id="projectedPriceDisplay" class="h5 mb-0">$0.00</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Preview Table - First 2 days -->
+                                    <div class="table-responsive border rounded shadow-sm">
+                                        <table class="table table-hover table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Price</th>
+                                                    <th>Change</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="predictionPreviewTable">
+                                                <!-- Will be populated via JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-center mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle"></i> Preview showing initial days. Click "View Full Details" for complete analysis.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 bg-light p-3 rounded shadow-sm">
+                            <h5 class="mb-3"><i class="bi bi-lightbulb text-warning"></i> Why Short-Term Predictions?</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <div class="bg-success text-white rounded p-2">
+                                                <i class="bi bi-graph-up"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6>Higher Accuracy</h6>
+                                            <p class="small text-muted">Short-term predictions typically have better accuracy than long-term forecasts</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <div class="bg-primary text-white rounded p-2">
+                                                <i class="bi bi-hand-thumbs-up"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6>Actionable Signals</h6>
+                                            <p class="small text-muted">Get clear buy/sell recommendations for immediate action</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0">
+                                            <div class="bg-warning text-white rounded p-2">
+                                                <i class="bi bi-bullseye"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1 ms-3">
+                                            <h6>Daily Price Targets</h6>
+                                            <p class="small text-muted">Use predicted prices as reference points for setting limit orders</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Realistic Trading Strategy -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-graph-up"></i> Realistic Trading Strategy
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Final Portfolio</h6>
+                                        <h3 class="mb-0">$10353.32</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Total Return</h6>
+                                        <h3 class="mb-0 text-success">3.53%</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Buy & Hold Return</h6>
+                                        <h3 class="mb-0 text-success">2.77%</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body text-center py-4">
+                                        <h6 class="text-muted mb-2">Trading Days</h6>
+                                        <h3 class="mb-0">5.0</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <a href="/realistic-details" class="btn btn-outline-primary me-2">
+                                <i class="bi bi-bar-chart-line"></i> View Detailed Trading History
+                            </a>
+                            <form action="/run-realistic-simulation" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-arrow-repeat"></i> Re-Run Realistic Simulation
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+            <div id="simulationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <strong class="me-auto">Processing Complete</strong>
+                    <small>Just now</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    <div id="toastMessage"></div>
+                    <div class="mt-2 pt-2 border-top">
+                        <button type="button" id="toastViewBtn" class="btn btn-sm btn-primary" data-url="">View Results</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Check for notification messages on page load
+            checkForPredictions();
+            
+            function checkForPredictions() {
+                $.ajax({
+                    url: '/check-prediction-status',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Update the form with the last prediction values
+                            $('#current_price').val(response.prediction.current_price);
+                            $('#days').val(response.prediction.days);
+                            
+                            if (response.prediction.portfolio_value) {
+                                $('#portfolio_value').val(response.prediction.portfolio_value);
+                            }
+                            
+                            if (response.prediction.shares_owned) {
+                                $('#shares_owned').val(response.prediction.shares_owned);
+                            }
+                            
+                            // Show the prediction results
+                            loadPredictionResults();
+                        }
+                    }
+                });
+            }
+            
+            // Handle the prediction form submission
+            $('#nextDaysPredictionForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                // Show the progress indicator
+                $('#predictionProgress').removeClass('d-none');
+                $('#predictionError').addClass('d-none');
+                $('#runPredictionBtn').prop('disabled', true);
+                
+                // Collect form data
+                const formData = $(this).serialize();
+                
+                // Submit the form via AJAX
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Update prediction status
+                            $('#predictionStatus').text('Prediction completed successfully!');
+                            
+                            // Load the prediction results with a slight delay
+                            setTimeout(function() {
+                                $('#predictionProgress').addClass('d-none');
+                                $('#runPredictionBtn').prop('disabled', false);
+                                loadPredictionResults();
+                            }, 500);
+                        } else {
+                            // Show error message
+                            $('#predictionError').removeClass('d-none').text(response.message);
+                            $('#predictionProgress').addClass('d-none');
+                            $('#runPredictionBtn').prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr) {
+                        // Handle error
+                        $('#predictionError').removeClass('d-none').text('An error occurred during prediction. Please try again.');
+                        $('#predictionProgress').addClass('d-none');
+                        $('#runPredictionBtn').prop('disabled', false);
+                    }
+                });
+            });
+            
+            function loadPredictionResults() {
+                // Load prediction results
+                $.ajax({
+                    url: '/check-prediction-status',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            // Hide the "No Predictions Yet" message
+                            $('#noPredictionsMessage').addClass('d-none');
+                            
+                            // Show the results preview
+                            $('#predictionResultsPreview').removeClass('d-none');
+                            
+                            // Set the full results button URL
+                            $('#fullResultsBtn').attr('href', '/next-days-prediction-details');
+                            
+                            // Set the chart image (with cache-busting)
+                            const timestamp = new Date().getTime();
+                            $('#predictionChartPreview').attr('src', '/next_days_prediction.png?t=' + timestamp);
+                            
+                            // Set current and projected price
+                            $('#currentPriceDisplay').text('$' + response.prediction.current_price.toFixed(2));
+                            
+                            // Load the prediction details to populate the table
+                            $.getJSON('/results/next_days_prediction.json', function(data) {
+                                // Update trend indicator
+                                const overallChange = data.overall_change || 0;
+                                $('#trendIndicator').html(
+                                    overallChange >= 0 ? 
+                                    `<span class="text-success"><i class="bi bi-arrow-up-right"></i> +${overallChange.toFixed(2)}%</span>` :
+                                    `<span class="text-danger"><i class="bi bi-arrow-down-right"></i> ${overallChange.toFixed(2)}%</span>`
+                                );
+                                
+                                // Update projected price
+                                if (data.predictions && data.predictions.length > 0) {
+                                    const lastPrediction = data.predictions[data.predictions.length - 1];
+                                    $('#projectedPriceDisplay').text('$' + lastPrediction.Predicted_Price.toFixed(2));
+                                    
+                                    // Clear and populate the preview table (first 3 days or less)
+                                    const previewTableBody = $('#predictionPreviewTable');
+                                    previewTableBody.empty();
+                                    
+                                    const maxPreviewRows = 3;
+                                    const previewData = data.predictions.slice(0, maxPreviewRows);
+                                    
+                                    previewData.forEach(function(pred, index) {
+                                        const prevPrice = index === 0 ? data.current_price : data.predictions[index-1].Predicted_Price;
+                                        const priceChange = ((pred.Predicted_Price / prevPrice) - 1) * 100;
+                                        const changeClass = priceChange >= 0 ? 'text-success' : 'text-danger';
+                                        const changeArrow = priceChange >= 0 ? '↑' : '↓';
+                                        
+                                        const actionClass = 
+                                            pred.Action === 'buy' ? 'bg-success text-white' :
+                                            pred.Action === 'sell' ? 'bg-danger text-white' : 'bg-warning text-dark';
+                                        
+                                        previewTableBody.append(`
+                                            <tr>
+                                                <td>${pred.Date}</td>
+                                                <td>$${pred.Predicted_Price.toFixed(2)}</td>
+                                                <td class="${changeClass}">${priceChange.toFixed(2)}% ${changeArrow}</td>
+                                                <td><span class="badge ${actionClass}">${pred.Action.toUpperCase()}</span></td>
+                                            </tr>
+                                        `);
+                                    });
+                                    
+                                    // If there are more than maxPreviewRows predictions, add a "more" row
+                                    if (data.predictions.length > maxPreviewRows) {
+                                        previewTableBody.append(`
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted">
+                                                    <i class="bi bi-three-dots"></i> ${data.predictions.length - maxPreviewRows} more days...
+                                                </td>
+                                            </tr>
+                                        `);
+                                    }
+                                }
+                                
+                                // Update portfolio with current price from prediction
+                                if (data && data.current_price) {
+                                    portfolioData.currentStockPrice = data.current_price;
+                                    savePortfolio();
+                                }
+                            }).fail(function() {
+                                console.error("Could not load prediction details");
+                            });
+                            
+                            // Your prediction is ready notification
+                            $('#yourPredictionReady').removeClass('d-none')
+                                .text(`Your prediction from ${response.prediction.date} is ready!`);
+                        }
+                    }
+                });
+            }
+            
+            // Portfolio accordion toggle animation
+            $('#portfolioAccordion').on('shown.bs.collapse', function () {
+                $('html, body').animate({
+                    scrollTop: $('#portfolioHeading').offset().top - 100
+                }, 200);
+            });
+            
+            // Reset prediction calculator
+            $('#resetPredictionBtn').on('click', function() {
+                // Clear form inputs
+                $('#current_price').val('');
+                $('#days').val('5');
+                $('#portfolio_value').val('10000');
+                $('#shares_owned').val('0');
+                
+                // Hide prediction results if visible
+                $('#predictionResultsPreview').addClass('d-none');
+                $('#noPredictionsMessage').removeClass('d-none');
+                $('#predictionProgress').addClass('d-none');
+                $('#predictionError').addClass('d-none');
+                $('#yourPredictionReady').addClass('d-none');
+                
+                // Reset accordion if expanded
+                $('#portfolioCollapse').removeClass('show');
+                $('.accordion-button').addClass('collapsed').attr('aria-expanded', 'false');
+                
+                // Clear any server-side stored prediction
+                $.ajax({
+                    url: '/reset-prediction',
+                    type: 'POST',
+                    success: function(response) {
+                        console.log('Prediction reset successful');
+                    }
+                });
+            });
+            
+            //
+            // Portfolio Dashboard Functionality
+            //
+            
+            // Initialize portfolio data from localStorage or with defaults
+            let portfolioData = JSON.parse(localStorage.getItem('tslaPortfolio')) || {
+                initialInvestment: 10000.00,
+                sharesOwned: 0.00,
+                avgBuyPrice: 0.00,
+                cashAvailable: 10000.00,
+                currentStockPrice: 0.00,
+                lastUpdated: null,
+                transactions: []
+            };
+
+            // Portfolio Dashboard Functions
+            function updatePortfolioDisplay() {
+                // Update view mode displays
+                $('#initialInvestmentDisplay').text(portfolioData.initialInvestment.toFixed(2));
+                $('#sharesOwnedDisplay').text(portfolioData.sharesOwned.toFixed(4));
+                $('#avgBuyPriceDisplay').text(portfolioData.avgBuyPrice.toFixed(2));
+                $('#cashAvailableDisplay').text(portfolioData.cashAvailable.toFixed(2));
+                
+                // Calculate current portfolio value
+                const stockValue = portfolioData.sharesOwned * portfolioData.currentStockPrice;
+                const totalValue = stockValue + portfolioData.cashAvailable;
+                
+                $('#currentValueDisplay').text(totalValue.toFixed(2));
+                
+                // Calculate and display return percentage
+                const returnPct = portfolioData.initialInvestment > 0 ? 
+                    ((totalValue / portfolioData.initialInvestment) - 1) * 100 : 0;
+                
+                const returnDisplay = returnPct >= 0 ? 
+                    `<span class="text-success">+${returnPct.toFixed(2)}%</span>` : 
+                    `<span class="text-danger">${returnPct.toFixed(2)}%</span>`;
+                
+                $('#totalReturnDisplay').html(returnDisplay);
+                
+                // Update last updated time
+                $('#lastUpdatedDisplay').text(portfolioData.lastUpdated ? 
+                    new Date(portfolioData.lastUpdated).toLocaleString() : 'Never');
+                
+                // Update total invested (total value of shares at purchase price)
+                const totalInvested = portfolioData.sharesOwned * portfolioData.avgBuyPrice;
+                $('#totalInvestedDisplay').text(totalInvested.toFixed(2));
+                
+                // Update form values
+                $('#initialInvestment').val(portfolioData.initialInvestment.toFixed(2));
+                $('#sharesOwned').val(portfolioData.sharesOwned.toFixed(4));
+                $('#avgBuyPrice').val(portfolioData.avgBuyPrice.toFixed(2));
+                $('#cashAvailable').val(portfolioData.cashAvailable.toFixed(2));
+                $('#currentStockPrice').val(portfolioData.currentStockPrice.toFixed(2));
+                
+                const calculatedValue = (portfolioData.sharesOwned * portfolioData.currentStockPrice) + 
+                    portfolioData.cashAvailable;
+                $('#calculatedPortfolioValue').text(`$${calculatedValue.toFixed(2)}`);
+                
+                // Update transactions table
+                updateTransactionsTable();
+                
+                // Update portfolio values in the prediction form
+                $('#portfolio_value').val(totalValue.toFixed(2));
+                $('#shares_owned').val(portfolioData.sharesOwned.toFixed(4));
+            }
+
+            function updateTransactionsTable() {
+                const tableBody = $('#transactionsTable');
+                tableBody.empty();
+                
+                if (portfolioData.transactions.length === 0) {
+                    tableBody.append(`
+                        <tr class="text-center text-muted">
+                            <td colspan="6">No transactions yet</td>
+                        </tr>
+                    `);
+                    return;
+                }
+                
+                // Display the last 5 transactions (or fewer if there are less than 5)
+                const recentTransactions = [...portfolioData.transactions]
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 5);
+                
+                recentTransactions.forEach(transaction => {
+                    const isPositive = transaction.type === 'buy';
+                    const typeClass = isPositive ? 'text-success' : 'text-danger';
+                    const typeIcon = isPositive ? 'bi-arrow-up-circle-fill' : 'bi-arrow-down-circle-fill';
+                    const fee = transaction.fee || 0;
+                    const totalWithFee = isPositive ? 
+                        -(transaction.total || (transaction.shares * transaction.price) + fee) : 
+                        (transaction.total || (transaction.shares * transaction.price) - fee);
+                    
+                    tableBody.append(`
+                        <tr>
+                            <td>${new Date(transaction.date).toLocaleDateString()}</td>
+                            <td class="${typeClass}">
+                                <i class="bi ${typeIcon} me-1"></i>
+                                ${transaction.type.toUpperCase()}
+                            </td>
+                            <td>${transaction.shares.toFixed(4)}</td>
+                            <td>$${transaction.price.toFixed(2)}</td>
+                            <td>$${fee.toFixed(2)}</td>
+                            <td class="${typeClass}">${isPositive ? '-' : '+'}$${Math.abs(totalWithFee).toFixed(2)}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            function savePortfolio() {
+                portfolioData.lastUpdated = new Date().toISOString();
+                localStorage.setItem('tslaPortfolio', JSON.stringify(portfolioData));
+                updatePortfolioDisplay();
+            }
+
+            // Initialize portfolio display
+            updatePortfolioDisplay();
+
+            // Portfolio Edit Mode Toggle
+            $('#editPortfolioBtn').on('click', function() {
+                $('#portfolioSummaryView').addClass('d-none');
+                $('#portfolioEditForm').removeClass('d-none');
+            });
+
+            $('#cancelEditBtn').on('click', function() {
+                $('#portfolioEditForm').addClass('d-none');
+                $('#portfolioSummaryView').removeClass('d-none');
+                updatePortfolioDisplay(); // Reset form values to current portfolio data
+            });
+
+            // Save Portfolio
+            $('#updatePortfolioForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                portfolioData.initialInvestment = parseFloat($('#initialInvestment').val()) || 0;
+                portfolioData.sharesOwned = parseFloat($('#sharesOwned').val()) || 0;
+                portfolioData.avgBuyPrice = parseFloat($('#avgBuyPrice').val()) || 0;
+                portfolioData.cashAvailable = parseFloat($('#cashAvailable').val()) || 0;
+                portfolioData.currentStockPrice = parseFloat($('#currentStockPrice').val()) || 0;
+                
+                savePortfolio();
+                
+                // Switch back to view mode
+                $('#portfolioEditForm').addClass('d-none');
+                $('#portfolioSummaryView').removeClass('d-none');
+                
+                // Show confirmation toast
+                $('#toastMessage').text('Portfolio updated successfully');
+                new bootstrap.Toast(document.getElementById('simulationToast')).show();
+            });
+
+            // Reset Portfolio
+            $('#resetPortfolioBtn').on('click', function() {
+                if (confirm('Are you sure you want to reset your portfolio to default values? This cannot be undone.')) {
+                    portfolioData = {
+                        initialInvestment: 10000.00,
+                        sharesOwned: 0.00,
+                        avgBuyPrice: 0.00,
+                        cashAvailable: 10000.00,
+                        currentStockPrice: 0.00,
+                        lastUpdated: new Date().toISOString(),
+                        transactions: []
+                    };
+                    
+                    savePortfolio();
+                    
+                    // Show confirmation toast
+                    $('#toastMessage').text('Portfolio has been reset to default values');
+                    new bootstrap.Toast(document.getElementById('simulationToast')).show();
+                }
+            });
+
+            // Real-time portfolio value calculation in edit form
+            $('#sharesOwned, #currentStockPrice, #cashAvailable').on('input', function() {
+                const shares = parseFloat($('#sharesOwned').val()) || 0;
+                const price = parseFloat($('#currentStockPrice').val()) || 0;
+                const cash = parseFloat($('#cashAvailable').val()) || 0;
+                
+                const total = (shares * price) + cash;
+                $('#calculatedPortfolioValue').text(`$${total.toFixed(2)}`);
+            });
+
+            // Add Transaction Modal
+            $('#addTransactionBtn').on('click', function() {
+                // Set default date to today
+                $('#transactionDate').val(new Date().toISOString().split('T')[0]);
+                
+                // Reset form fields
+                $('#transactionShares').val('');
+                $('#transactionPrice').val(portfolioData.currentStockPrice > 0 ? 
+                    portfolioData.currentStockPrice.toFixed(2) : '');
+                $('#transactionTotal').text('$0.00');
+                
+                // Show modal
+                new bootstrap.Modal(document.getElementById('addTransactionModal')).show();
+            });
+
+            // Calculate transaction total when shares or price changes
+            $('#transactionShares, #transactionPrice').on('input', function() {
+                const shares = parseFloat($('#transactionShares').val()) || 0;
+                const price = parseFloat($('#transactionPrice').val()) || 0;
+                const type = $('input[name="transactionType"]:checked').val();
+                
+                const subtotal = shares * price;
+                const fee = subtotal * 0.01; // 1% fee
+                const total = type === 'buy' ? subtotal + fee : subtotal - fee;
+                
+                $('#transactionSubtotal').text(`$${subtotal.toFixed(2)}`);
+                $('#transactionFee').text(`$${fee.toFixed(2)} (1%)`);
+                $('#transactionTotal').text(`$${Math.abs(total).toFixed(2)}`);
+                
+                // Show warning if not enough cash for purchase
+                if (type === 'buy') {
+                    if (total > portfolioData.cashAvailable) {
+                        $('#cashWarning').removeClass('d-none');
+                        $('#cashAvailableAmount').text(`$${portfolioData.cashAvailable.toFixed(2)}`);
+                    } else {
+                        $('#cashWarning').addClass('d-none');
+                    }
+                } else {
+                    $('#cashWarning').addClass('d-none');
+                }
+                
+                // Show warning if selling more shares than owned
+                if (type === 'sell') {
+                    if (shares > portfolioData.sharesOwned) {
+                        $('#sharesWarning').removeClass('d-none');
+                        $('#sharesOwnedAmount').text(portfolioData.sharesOwned.toFixed(4));
+                    } else {
+                        $('#sharesWarning').addClass('d-none');
+                    }
+                } else {
+                    $('#sharesWarning').addClass('d-none');
+                }
+            });
+            
+            // Update calculation when transaction type changes
+            $('input[name="transactionType"]').on('change', function() {
+                // Trigger recalculation
+                $('#transactionShares').trigger('input');
+            });
+
+            // Add Transaction
+            $('#submitTransactionBtn').on('click', function() {
+                const type = $('input[name="transactionType"]:checked').val();
+                const date = $('#transactionDate').val();
+                const shares = parseFloat($('#transactionShares').val());
+                const price = parseFloat($('#transactionPrice').val());
+                
+                if (!date || !shares || !price) {
+                    alert('Please fill in all fields');
+                    return;
+                }
+                
+                const subtotal = shares * price;
+                const transactionFeePercentage = 0.01; // 1% transaction fee
+                const transactionFee = subtotal * transactionFeePercentage;
+                const total = type === 'buy' ? subtotal + transactionFee : subtotal - transactionFee;
+                
+                // Validate transaction
+                if (type === 'buy' && total > portfolioData.cashAvailable) {
+                    alert(`Insufficient cash available for this purchase (${total.toFixed(2)} needed with 1% fee)`);
+                    return;
+                }
+                
+                if (type === 'sell' && shares > portfolioData.sharesOwned) {
+                    alert('You cannot sell more shares than you own');
+                    return;
+                }
+                
+                // Add transaction
+                portfolioData.transactions.push({
+                    type,
+                    date,
+                    shares,
+                    price,
+                    fee: transactionFee,
+                    total: type === 'buy' ? -total : subtotal - transactionFee
+                });
+                
+                // Update portfolio based on transaction
+                if (type === 'buy') {
+                    // Calculate new average buy price
+                    const totalSharesAfter = portfolioData.sharesOwned + shares;
+                    const totalCostBefore = portfolioData.sharesOwned * portfolioData.avgBuyPrice;
+                    const totalCostAfter = totalCostBefore + subtotal; // Use subtotal for average cost basis (without fee)
+                    
+                    portfolioData.avgBuyPrice = totalSharesAfter > 0 ? totalCostAfter / totalSharesAfter : 0;
+                    portfolioData.sharesOwned = totalSharesAfter;
+                    portfolioData.cashAvailable -= total; // Use total with fee for cash reduction
+                } else {
+                    // For sell transactions, subtract fee from proceeds
+                    const netProceeds = subtotal - transactionFee;
+                    
+                    portfolioData.sharesOwned -= shares;
+                    portfolioData.cashAvailable += netProceeds;
+                }
+                
+                // Update current stock price
+                portfolioData.currentStockPrice = price;
+                
+                // Save and update display
+                savePortfolio();
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('addTransactionModal')).hide();
+                
+                // Show confirmation toast
+                $('#toastMessage').text(`Transaction added successfully with 1% fee ($${transactionFee.toFixed(2)})`);
+                new bootstrap.Toast(document.getElementById('simulationToast')).show();
+            });
+        });
+    </script>
 </body>
-</html> 
+</html>

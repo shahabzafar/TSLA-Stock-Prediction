@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesla Stock - Next {{ days }} Days Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .prediction-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            background-color: white;
+        }
+        .card-header {
+            background-color: #343a40;
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        .prediction-value {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .positive-return {
+            color: #28a745;
+        }
+        .negative-return {
+            color: #dc3545;
+        }
+        .chart-container {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .project-highlight {
+            background-color: #f0f8ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .recommendation {
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-left: 5px;
+        }
+        .rec-buy {
+            background-color: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        .rec-sell {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+        .rec-hold {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-graph-up-arrow text-primary me-2"></i>
+                Tesla Stock - Next {{ days }} Days Prediction
+            </h1>
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </header>
+
+        <div class="project-highlight mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h4>Prediction Summary</h4>
+                    <p>
+                        Based on the current closing price of <strong>${{ current_price }}</strong> on {{ prediction_date }}, 
+                        our model has predicted Tesla stock prices for the next trading days. These predictions can help 
+                        guide your investment decisions with daily price targets and trading recommendations.
+                    </p>
+                </div>
+                <div class="col-md-5">
+                    <div class="card border-primary h-100">
+                        <div class="card-header bg-primary text-white">
+                            <i class="bi bi-wallet2 me-2"></i> Your Portfolio
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="small text-muted">Current Value</div>
+                                    <div class="h5">${{ initial_portfolio|round(2) }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">TSLA Shares</div>
+                                    <div class="h5">{{ shares_owned|round(4) }}</div>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-6">
+                                    <div class="small text-muted">Projected Value</div>
+                                    <div class="h5">${{ final_portfolio|round(2) }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Projected Return</div>
+                                    <div class="h5 {% if portfolio_change > 0 %}positive-return{% elif portfolio_change < 0 %}negative-return{% endif %}">
+                                        {{ portfolio_change|round(2) }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Price Chart -->
+            <div class="col-12">
+                <div class="prediction-card">
+                    <div class="card-header">
+                        <i class="bi bi-graph-up-arrow me-2"></i> Price & Portfolio Projection
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="chart-container">
+                            <img src="/next_days_prediction.png?t={{ range(1, 10000) | random }}" alt="Price Prediction Chart" class="img-fluid" style="width: 100%;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Prediction Table -->
+            <div class="col-12">
+                <div class="prediction-card">
+                    <div class="card-header">
+                        <i class="bi bi-table me-2"></i> Daily Predictions & Investment Plan
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="predictionTable" class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Predicted Price</th>
+                                        <th>Change</th>
+                                        <th>Recommendation</th>
+                                        <th>Confidence</th>
+                                        {% if predictions[0] is defined and 'Portfolio_Value' in predictions[0] %}
+                                        <th>Shares</th>
+                                        <th>Portfolio</th>
+                                        <th>Investment</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for pred in predictions %}
+                                    <tr>
+                                        <td>{{ pred.Date }}</td>
+                                        <td class="prediction-value">${{ pred.Predicted_Price }}</td>
+                                        {% set change = ((pred.Predicted_Price / current_price) - 1) * 100 if loop.index == 1 else ((pred.Predicted_Price / predictions[loop.index-2].Predicted_Price) - 1) * 100 %}
+                                        <td class="{% if change > 0 %}positive-return{% elif change < 0 %}negative-return{% endif %}">
+                                            {{ change|round(2) }}% {% if change > 0 %}↑{% elif change < 0 %}↓{% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="recommendation {% if pred.Action == 'buy' %}rec-buy{% elif pred.Action == 'sell' %}rec-sell{% else %}rec-hold{% endif %}">
+                                                {{ pred.Action|upper }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar bg-{{ 'success' if pred.Action == 'buy' else 'danger' if pred.Action == 'sell' else 'warning' }}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ (pred.Confidence * 100)|round|int }}%;" 
+                                                     aria-valuenow="{{ (pred.Confidence * 100)|round|int }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ (pred.Confidence * 100)|round|int }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        {% if 'Shares_Held' in pred %}
+                                        <td>{{ pred.Shares_Held|round(4) }}</td>
+                                        <td>${{ pred.Portfolio_Value|round(2) }}</td>
+                                        <td>
+                                            {% if pred.Investment_Amount > 0 %}
+                                            <span class="badge bg-success">+${{ pred.Investment_Amount|round(2) }}</span>
+                                            {% elif pred.Investment_Amount < 0 %}
+                                            <span class="badge bg-danger">${{ pred.Investment_Amount|round(2) }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">$0</span>
+                                            {% endif %}
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Investment Strategy -->
+            <div class="col-12">
+                <div class="prediction-card">
+                    <div class="card-header">
+                        <i class="bi bi-lightbulb me-2"></i> Investment Recommendation
+                    </div>
+                    <div class="card-body">
+                        {% set last_prediction = predictions[-1] if predictions else None %}
+                        {% if last_prediction and 'Shares_Held' in last_prediction %}
+                            {% set shares_diff = last_prediction.Shares_Held - shares_owned %}
+                            <div class="alert {% if shares_diff > 0 %}alert-success{% elif shares_diff < 0 %}alert-danger{% else %}alert-warning{% endif %} mb-4">
+                                <div class="d-flex">
+                                    <div class="me-3">
+                                        <i class="bi {% if shares_diff > 0 %}bi-arrow-up-circle-fill{% elif shares_diff < 0 %}bi-arrow-down-circle-fill{% else %}bi-dash-circle-fill{% endif %} display-5"></i>
+                                    </div>
+                                    <div>
+                                        <h4>
+                                            {% if shares_diff > 0 %}
+                                                Buy {{ shares_diff|round(4) }} TSLA shares over the next {{ days }} days
+                                            {% elif shares_diff < 0 %}
+                                                Sell {{ (shares_diff * -1)|round(4) }} TSLA shares over the next {{ days }} days
+                                            {% else %}
+                                                Hold your current {{ shares_owned|round(4) }} TSLA shares
+                                            {% endif %}
+                                        </h4>
+                                        <p class="mb-0">
+                                            {% if shares_diff > 0 %}
+                                                Our model predicts an upward trend for Tesla stock. Consider gradually buying shares to maximize your returns.
+                                            {% elif shares_diff < 0 %}
+                                                Our model suggests taking some profits on your Tesla position due to projected price declines.
+                                            {% else %}
+                                                Our model suggests maintaining your current Tesla position and watching for new signals.
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card border-primary h-100">
+                                        <div class="card-body text-center">
+                                            <h5 class="mb-3">Initial Investment</h5>
+                                            <div class="display-6">${{ initial_portfolio|round(2) }}</div>
+                                            <p class="text-muted mt-2">Starting portfolio value</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card border-success h-100">
+                                        <div class="card-body text-center">
+                                            <h5 class="mb-3">Projected Value</h5>
+                                            <div class="display-6">${{ final_portfolio|round(2) }}</div>
+                                            <p class="text-muted mt-2">Expected portfolio value after {{ days }} days</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card {% if portfolio_change > 0 %}border-success{% else %}border-danger{% endif %} h-100">
+                                        <div class="card-body text-center">
+                                            <h5 class="mb-3">Predicted Return</h5>
+                                            <div class="display-6 {% if portfolio_change > 0 %}positive-return{% elif portfolio_change < 0 %}negative-return{% endif %}">
+                                                {{ portfolio_change|round(2) }}%
+                                            </div>
+                                            <p class="text-muted mt-2">Expected percentage gain/loss</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                Portfolio tracking information not available for this prediction.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="prediction-card mb-5">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i> How to Use These Predictions
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-success text-white rounded-circle p-2 me-3">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Daily Price Targets</h5>
+                                <p class="mb-0 text-muted">Use predicted prices as daily targets for Tesla stock.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary text-white rounded-circle p-2 me-3">
+                                <i class="bi bi-hand-thumbs-up"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Trading Signals</h5>
+                                <p class="mb-0 text-muted">Follow the buy/sell recommendations based on our model.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-warning text-white rounded-circle p-2 me-3">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Risk Management</h5>
+                                <p class="mb-0 text-muted">Consider confidence levels when making trading decisions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <p class="mb-0">
+                        <i class="bi bi-exclamation-triangle text-warning"></i> 
+                        <strong>Disclaimer:</strong> These predictions are based on our model and historical data. The stock market is inherently unpredictable and these forecasts should be used as one of many tools in your investment strategy. Always do your own research and consider consulting with a financial advisor.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mb-5">
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            <a href="/" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Make New Prediction
+            </a>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#predictionTable').DataTable({
+                paging: false,
+                searching: false,
+                info: false
+            });
+        });
+    </script>
+</body>
+</html> 

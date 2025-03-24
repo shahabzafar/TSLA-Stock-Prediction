@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ month_name }} {{ year }} Simulation - Tesla Stock Trading</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            padding-top: 20px;
+        }
+        .dashboard-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            background-color: white;
+        }
+        .card-header {
+            background-color: #343a40;
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px 20px;
+            font-weight: 600;
+        }
+        .header-icon {
+            margin-right: 10px;
+        }
+        .action-buy {
+            background-color: rgba(40, 167, 69, 0.2);
+        }
+        .action-sell {
+            background-color: rgba(220, 53, 69, 0.2);
+        }
+        .highlighted-section {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="display-5 fw-bold">
+                    <i class="bi bi-calendar-check text-primary header-icon"></i>
+                    {{ month_name }} {{ year }} Simulation
+                </h1>
+                
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            <p class="lead text-muted">Trading simulation results for {{ month_name }} {{ year }}</p>
+        </header>
+
+        <div class="highlighted-section">
+            <h4><i class="bi bi-info-circle"></i> Simulation Overview</h4>
+            <p>This simulation uses our best prediction model for a full month of trading:</p>
+            <ul>
+                <li><strong>Trading Period:</strong> {{ performance['Trading Period'] }}</li>
+                <li><strong>Daily Order Submission:</strong> 9:00 AM EST</li>
+                <li><strong>Order Execution:</strong> 10:00 AM EST</li>
+                <li><strong>Starting Capital:</strong> ${{ performance['Initial Portfolio Value ($)'] }}</li>
+                <li><strong>Transaction Fee:</strong> {{ performance['Transaction Fee (%)'] }}%</li>
+                <li><strong>Order Format:</strong> 
+                    <ul>
+                        <li>Buy: &lt;dollar amount&gt;</li>
+                        <li>Sell: &lt;number of shares&gt;</li>
+                        <li>Hold: No transaction</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted small">Final Portfolio</div>
+                        <div class="h3">${{ performance['Final Portfolio Value ($)'] }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted small">Total Return</div>
+                        <div class="h3 {% if performance['Total Return (%)']|float > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ performance['Total Return (%)'] }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted small">Buy & Hold Return</div>
+                        <div class="h3 {% if performance['Buy & Hold Return (%)']|float > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ performance['Buy & Hold Return (%)'] }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="text-muted small">Strategy vs. Buy & Hold</div>
+                        <div class="h3 {% if performance['Strategy vs. Buy & Hold (%)']|float > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ performance['Strategy vs. Buy & Hold (%)'] }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-header">
+                <i class="bi bi-journal-text header-icon"></i>
+                {{ month_name }} {{ year }} Trading History
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="tradingHistoryTable" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>9:00 AM Price ($)</th>
+                                <th>10:00 AM Price ($)</th>
+                                <th>Close Price ($)</th>
+                                <th>Action (9:00 AM)</th>
+                                <th>Order Amount</th>
+                                <th>Portfolio Value ($)</th>
+                                <th>Cash ($)</th>
+                                <th>Shares</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for day in history %}
+                            <tr class="{% if day.Action == 'buy' %}action-buy{% elif day.Action == 'sell' %}action-sell{% endif %}">
+                                <td>{{ day.Date }}</td>
+                                <td>{{ "%.2f"|format(day.Price_9AM) }}</td>
+                                <td>{{ "%.2f"|format(day.Price_10AM) }}</td>
+                                <td>{{ "%.2f"|format(day.Close) }}</td>
+                                <td>
+                                    {% if day.Action == 'buy' %}
+                                    <span class="badge bg-success">Buy</span>
+                                    {% elif day.Action == 'sell' %}
+                                    <span class="badge bg-danger">Sell</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Hold</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if day.Action == 'buy' and day.Order_Amount is not none %}
+                                        ${{ "%.2f"|format(day.Order_Amount) }}
+                                    {% elif day.Action == 'sell' and day.Order_Amount is not none %}
+                                        {{ day.Order_Amount }} shares
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ "%.2f"|format(day.Portfolio_Value) }}</td>
+                                <td>{{ "%.2f"|format(day.Cash) }}</td>
+                                <td>{{ day.Shares }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-header">
+                <i class="bi bi-graph-up header-icon"></i>
+                Visualization
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <img src="/static/{{ month_name|lower }}_{{ year }}_portfolio_value.png" class="img-fluid rounded" alt="Portfolio Value Chart">
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <img src="/static/{{ month_name|lower }}_{{ year }}_trading_signals.png" class="img-fluid rounded" alt="Trading Signals Chart">
+                    </div>
+                    <div class="col-md-12">
+                        <img src="/static/{{ month_name|lower }}_{{ year }}_portfolio_composition.png" class="img-fluid rounded" alt="Portfolio Composition Chart">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4 mb-5">
+            <a href="/" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+            <div>
+                <a href="/" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-plus-circle"></i> Run Another Simulation
+                </a>
+                <button id="exportCSV" class="btn btn-success">
+                    <i class="bi bi-download"></i> Export to CSV
+                </button>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-5 pt-3 pb-3 text-center text-muted border-top">
+            <p>Machine Learning & Data Mining - Tesla Stock Trading Project</p>
+        </footer>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize DataTable
+            var table = $('#tradingHistoryTable').DataTable({
+                order: [[0, 'asc']], // Sort by date ascending by default
+                pageLength: 10,
+                lengthMenu: [[5, 10, 25, -1], [5, 10, 25, "All"]]
+            });
+            
+            // CSV Export functionality
+            $('#exportCSV').on('click', function() {
+                var csvContent = "data:text/csv;charset=utf-8,";
+                
+                // Get headers
+                var headers = [];
+                $('#tradingHistoryTable thead th').each(function() {
+                    headers.push($(this).text());
+                });
+                csvContent += headers.join(',') + "\r\n";
+                
+                // Get data from DataTable
+                var data = table.data().toArray();
+                data.forEach(function(row) {
+                    var csvRow = [];
+                    row.forEach(function(cell) {
+                        // Remove any HTML from cells
+                        var cellText = cell;
+                        if (typeof cell === 'string') {
+                            cellText = cell.replace(/<[^>]*>/g, '').trim();
+                        }
+                        csvRow.push('"' + cellText + '"');
+                    });
+                    csvContent += csvRow.join(',') + "\r\n";
+                });
+                
+                // Create download link
+                var encodedUri = encodeURI(csvContent);
+                var link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "tesla_{{ month_name|lower }}_{{ year }}_trading_history.csv");
+                document.body.appendChild(link);
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html> 
