@@ -11,6 +11,7 @@ from io import BytesIO
 import subprocess
 import time
 import calendar
+import sys
 
 app = Flask(__name__)
 app.secret_key = 'tsla_predictions_secret_key'  # Required for session
@@ -471,6 +472,13 @@ def project_details():
     if 'Portfolio_Value' in project_history.columns:
         project_history['portfolio_value'] = project_history['Portfolio_Value']
     
+    # Calculate Return if it doesn't exist
+    if 'Return' not in project_history.columns:
+        # Calculate percentage return for each row based on portfolio value changes
+        project_history['Return'] = project_history['portfolio_value'].pct_change()
+        # Set the first day's return to 0
+        project_history.loc[0, 'Return'] = 0
+    
     history_data = project_history.to_dict('records')
     
     return render_template('project_details.html', history=history_data)
@@ -532,16 +540,39 @@ def run_next_days_prediction():
         except ValueError:
             return jsonify({'status': 'error', 'message': 'Invalid input values'})
         
-        # Run the prediction script
-        cmd = f"python next_days_prediction.py --price {current_price} --days {days}"
-        if portfolio_value is not None and shares_owned is not None:
-            cmd += f" --portfolio {portfolio_value} --shares {shares_owned}"
-            
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        # Ensure directories exist
+        os.makedirs('results', exist_ok=True)
+        os.makedirs('visualizations', exist_ok=True)
+        os.makedirs('static/visualizations', exist_ok=True)
         
-        if result.returncode != 0:
-            print(f"Error running prediction: {result.stderr}")
-            return jsonify({'status': 'error', 'message': 'Error running prediction'})
+        # Build argument list for the script
+        args = [
+            sys.executable,
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'next_days_prediction.py'),
+            '--price', str(current_price),
+            '--days', str(days),
+            '--portfolio', str(portfolio_value),
+            '--shares', str(shares_owned)
+        ]
+        
+        print(f"Running prediction command: {' '.join(args)}")
+        
+        # Run the prediction script with proper arguments
+        result = subprocess.run(args, capture_output=True, text=True)
+        
+        # Check if the prediction file exists regardless of subprocess result
+        if not os.path.exists('results/next_days_prediction.json') or not os.path.exists('visualizations/next_days_prediction.png'):
+            print(f"Prediction failed: Output files not generated. Return code: {result.returncode}")
+            print(f"Error: {result.stderr}")
+            return jsonify({'status': 'error', 'message': 'Failed to generate prediction results'})
+        
+        # Copy visualization to static folder for web access
+        try:
+            import shutil
+            if os.path.exists('visualizations/next_days_prediction.png'):
+                shutil.copy('visualizations/next_days_prediction.png', 'static/visualizations/next_days_prediction.png')
+        except Exception as e:
+            print(f"Warning: Failed to copy visualization: {e}")
         
         # Store the prediction info in the session
         session['prediction'] = {
@@ -552,6 +583,7 @@ def run_next_days_prediction():
             'shares_owned': shares_owned
         }
         
+        print("Prediction successful, redirecting to details page")
         return jsonify({
             'status': 'success',
             'redirect': '/next-days-prediction-details'
@@ -598,7 +630,14 @@ def serve_result_file(filename):
 @app.route('/next_days_prediction.png')
 def serve_prediction_chart():
     """Serve the prediction chart image"""
-    return send_from_directory('visualizations', 'next_days_prediction.png')
+    # First try from visualizations directory
+    if os.path.exists('visualizations/next_days_prediction.png'):
+        return send_from_directory('visualizations', 'next_days_prediction.png')
+    # Then try from static/visualizations
+    elif os.path.exists('static/visualizations/next_days_prediction.png'):
+        return send_from_directory('static/visualizations', 'next_days_prediction.png')
+    else:
+        return "Prediction visualization not found", 404
 
 @app.route('/next-days-prediction-details')
 def next_days_prediction_details():

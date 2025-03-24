@@ -156,8 +156,12 @@
                                 <td>${{ "%.2f"|format(row.portfolio_value) }}</td>
                                 <td>${{ "%.2f"|format(row.Cash) if row.Cash is defined else "N/A" }}</td>
                                 <td>{{ "%.4f"|format(row.Shares) if row.Shares is defined else "N/A" }}</td>
-                                <td class="{% if row.Return > 0 %}positive-return{% elif row.Return < 0 %}negative-return{% endif %}">
-                                    {{ "%.2f"|format(row.Return * 100) if row.Return is defined else "N/A" }}%
+                                <td class="{% if row.Return is defined and row.Return > 0 %}positive-return{% elif row.Return is defined and row.Return < 0 %}negative-return{% endif %}">
+                                    {% if row.Return is defined %}
+                                        {{ "%.2f"|format(row.Return * 100) }}%
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}

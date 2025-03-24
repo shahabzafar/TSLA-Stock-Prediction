@@ -8,10 +8,18 @@ import argparse
 import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 import json
+import warnings
 
 # Disable TensorFlow warnings
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Suppress TensorFlow logs
+
+# Disable deprecation warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', category=FutureWarning)
+
+# Filter out TensorFlow warning messages
+tf.get_logger().setLevel('ERROR')  # Only show ERROR messages
 
 def load_best_model():
     """
